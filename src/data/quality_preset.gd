@@ -12,6 +12,6 @@ extends Resource
 @export var render_scale_step: float = 0.05
 @export var shadows_enabled: bool = true
 @export var shadow_max_distance: float = 25.0
-## Số cọc rào quanh đấu trường (vẽ bằng MultiMesh).
-@export var arena_props: int = 48
+## Mật độ cảnh vật quanh đấu trường (nhà, cây, đá), 0..1.
+@export var scenery_density: float = 1.0
 @export var max_vfx: int = 12

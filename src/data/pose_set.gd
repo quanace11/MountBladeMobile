@@ -15,7 +15,7 @@ extends Resource
 @export var windup_right_pos := Vector3(0.45, 1.35, 0.05)
 @export var windup_right_rot := Vector3(-90, -110, 0)
 @export var windup_thrust_pos := Vector3(0.42, 1.05, 0.3)
-@export var windup_thrust_rot := Vector3(-70, -15, 0)
+@export var windup_thrust_rot := Vector3(-82, -5, 0)
 @export_group("Chém")
 @export var strike_up_pos := Vector3(0.1, 1.1, -0.55)
 @export var strike_up_rot := Vector3(-75, 0, 0)
@@ -41,12 +41,20 @@ extends Resource
 @export var blend_speed: float = 12.0
 ## Hệ số nhân tốc độ chuyển tư thế khi đang chém.
 @export var strike_blend_mult: float = 3.0
+## Thân trên xoay theo hướng gồng/chém (độ).
+@export var chest_twist_deg: float = 24.0
+## Thân trên ngả trước/sau khi bổ, khi bị khựng (độ).
+@export var chest_lean_deg: float = 10.0
+## Tay trái: tư thế khi cầm khiên (đứng, đỡ). Vị trí theo thân như bàn tay phải.
+@export var shield_idle_pos := Vector3(-0.28, 1.12, -0.32)
+@export var shield_block_pos := Vector3(-0.12, 1.38, -0.45)
+## Tay trái cầm cán vũ khí hai tay: cách tay phải bao xa dọc cán (mét).
+@export var two_hand_grip: float = 0.4
+## Độ dài một sải chân (mét) và độ nhấc chân khi chạy.
+@export var stride_length: float = 1.2
+@export var foot_lift: float = 0.12
 ## Thời gian ngã khi chết (giây).
 @export var death_fall_time: float = 0.6
-## Biên độ vung chân khi chạy (độ).
-@export var leg_swing_deg: float = 30.0
-## Số bước mỗi mét chạy.
-@export var steps_per_meter: float = 1.4
 
 
 ## Trả về [vị trí, góc] cho tên tư thế, ví dụ "windup_left".

@@ -4,10 +4,13 @@ extends Node3D
 
 var config: GameConfig
 var target: FighterView
+## Các tướng khác: camera tự kéo lại gần khi có người đứng chắn sau lưng người chơi.
+var obstacles: Array = []
 var camera: Camera3D
 var yaw: float = 0.0
 
 var _shake := 0.0
+var _dist := 0.0
 var _rng := RandomNumberGenerator.new()
 
 
@@ -15,12 +18,13 @@ func setup(p_config: GameConfig, p_target: FighterView) -> void:
 	config = p_config
 	target = p_target
 	camera = Camera3D.new()
-	camera.fov = 65.0
+	camera.fov = 60.0
 	camera.near = 0.1
 	camera.far = 120.0
 	add_child(camera)
 	camera.make_current()
 	yaw = target.rotation.y
+	_dist = config.camera_distance
 	_place(1.0)
 
 
@@ -41,9 +45,27 @@ func _place(k: float) -> void:
 	var fwd := Vector3(-sin(yaw), 0, -cos(yaw))
 	var right := Vector3(cos(yaw), 0, -sin(yaw))
 	var base := target.global_position
-	var want := base - fwd * config.camera_distance + right * config.camera_shoulder_offset + Vector3.UP * config.camera_height
+	_dist = lerpf(_dist, _clear_distance(base, fwd), k)
+	var want := base - fwd * _dist + right * config.camera_shoulder_offset + Vector3.UP * config.camera_height
 	global_position = global_position.lerp(want, k)
 	var look := base + Vector3.UP * 1.3 + fwd * 3.0 + right * config.camera_shoulder_offset * 0.5
 	if _shake > 0.0:
 		look += Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), 0) * _shake
 	camera.look_at_from_position(global_position, look, Vector3.UP)
+
+
+## Khoảng lùi camera lớn nhất mà không có tướng nào đứng chắn giữa camera và người chơi.
+func _clear_distance(base: Vector3, fwd: Vector3) -> float:
+	var best := config.camera_distance
+	for o in obstacles:
+		var n := o as Node3D
+		if n == null or n == target:
+			continue
+		var rel := n.global_position - base
+		var behind := -rel.dot(fwd)
+		if behind <= 0.2 or behind > config.camera_distance + 0.6:
+			continue
+		var side := (rel + fwd * behind).length()
+		if side < 0.9:
+			best = minf(best, maxf(0.9, behind - 0.7))
+	return best

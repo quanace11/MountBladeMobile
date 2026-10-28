@@ -12,5 +12,5 @@ min_render_scale = 0.7
 render_scale_step = 0.05
 shadows_enabled = true
 shadow_max_distance = 25.0
-arena_props = 72
+scenery_density = 1.0
 max_vfx = 16
