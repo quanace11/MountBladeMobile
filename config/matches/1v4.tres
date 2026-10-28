@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MatchDef" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/data/match_def.gd" id="1_m"]
+[ext_resource type="Script" path="res://src/data/character_def.gd" id="2_c"]
+[ext_resource type="Resource" path="res://config/characters/dao_tuong.tres" id="3_p"]
+[ext_resource type="Resource" path="res://config/characters/thuong_tuong.tres" id="e1"]
+[ext_resource type="Resource" path="res://config/characters/kiem_tuong.tres" id="e2"]
+[ext_resource type="Resource" path="res://config/characters/dao_tuong.tres" id="e3"]
+[ext_resource type="Resource" path="res://config/characters/thuong_tuong.tres" id="e4"]
+
+[resource]
+script = ExtResource("1_m")
+id = &"1v4"
+display_name = "1 đấu 4"
+player_character = ExtResource("3_p")
+enemy_characters = Array[ExtResource("2_c")]([ExtResource("e1"), ExtResource("e2"), ExtResource("e3"), ExtResource("e4")])

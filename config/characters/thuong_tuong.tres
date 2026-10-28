@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/character_def.gd" id="1_c"]
+[ext_resource type="Resource" path="res://config/weapons/giao.tres" id="2_w"]
+
+[resource]
+script = ExtResource("1_c")
+id = &"thuong_tuong"
+display_name = "Thương tướng"
+max_hp = 100.0
+max_stamina = 100.0
+stamina_regen = 18.0
+move_speed = 3.2
+turn_speed_deg = 360.0
+body_radius = 0.4
+weapon = ExtResource("2_w")
+armor_color = Color(0.15, 0.25, 0.5, 1)
+cloth_color = Color(0.75, 0.7, 0.55, 1)
+skin_color = Color(0.85, 0.66, 0.5, 1)
+height = 1.8

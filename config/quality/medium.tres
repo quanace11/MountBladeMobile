@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QualityPreset" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/quality_preset.gd" id="1_q"]
+
+[resource]
+script = ExtResource("1_q")
+id = &"medium"
+display_name = "Vừa"
+target_fps = 60
+render_scale = 0.85
+min_render_scale = 0.6
+render_scale_step = 0.05
+shadows_enabled = true
+shadow_max_distance = 25.0
+arena_props = 48
+max_vfx = 10

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/weapon_def.gd" id="1_w"]
+
+[resource]
+script = ExtResource("1_w")
+id = &"dao"
+display_name = "Đao dài"
+reach = 2.0
+arc_half_angle_deg = 55.0
+windup_time = 0.45
+release_time = 0.15
+recovery_time = 0.4
+damage_left = 28.0
+damage_right = 28.0
+damage_up = 34.0
+damage_thrust = 18.0
+attack_stamina_cost = 14.0
+has_shield = false
+blade_color = Color(0.85, 0.85, 0.9, 1)
+shaft_color = Color(0.45, 0.1, 0.08, 1)
+shaft_length = 1.5
+blade_length = 0.7
+blade_width = 0.14

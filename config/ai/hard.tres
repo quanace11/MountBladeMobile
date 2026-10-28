@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BotProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/bot_profile.gd" id="1_b"]
+
+[resource]
+script = ExtResource("1_b")
+id = &"hard"
+display_name = "Khó"
+think_hz = 15.0
+reaction_time = 0.2
+reaction_jitter = 0.08
+wrong_block_chance = 0.08
+no_block_chance = 0.03
+parry_attempt_chance = 0.35
+hold_windup_min = 0.0
+hold_windup_max = 0.5
+attack_cooldown_min = 0.7
+attack_cooldown_max = 1.6
+preferred_range_factor = 0.8
+min_stamina_to_attack = 15.0
+feint_chance = 0.2

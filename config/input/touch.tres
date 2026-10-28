@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="InputConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/input_config.gd" id="1_i"]
+
+[resource]
+script = ExtResource("1_i")
+block_scheme = 0
+joystick_radius = 110.0
+joystick_deadzone = 0.15
+left_zone_ratio = 0.45
+swipe_min_distance = 40.0
+chevron_min_turn_deg = 70.0
+chevron_min_second_leg = 30.0
+block_button_center = Vector2(0.62, 0.78)
+block_button_radius = 80.0
+show_attack_hint = false
+ignore_top_ratio = 0.13

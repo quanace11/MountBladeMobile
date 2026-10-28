@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QualityPreset" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/quality_preset.gd" id="1_q"]
+
+[resource]
+script = ExtResource("1_q")
+id = &"low"
+display_name = "Thấp"
+target_fps = 60
+render_scale = 0.7
+min_render_scale = 0.5
+render_scale_step = 0.05
+shadows_enabled = false
+shadow_max_distance = 25.0
+arena_props = 24
+max_vfx = 6
