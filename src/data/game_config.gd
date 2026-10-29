@@ -16,6 +16,12 @@ extends Resource
 @export var camera_distance: float = 3.4
 @export var camera_height: float = 2.1
 @export var camera_shoulder_offset: float = 0.55
+## Góc nhìn dọc của camera (độ).
+@export var camera_fov: float = 65.0
+## Camera nhìn vào điểm trước mặt người chơi bao xa, cao bao nhiêu (mét).
+## Nhìn xa và thấp thì nhân vật nằm ở giữa phía dưới màn hình, như Bannerlord.
+@export var camera_look_ahead: float = 7.0
+@export var camera_look_height: float = 1.0
 @export var camera_follow_speed: float = 8.0
 @export var camera_shake_hit: float = 0.12
 @export var camera_shake_block: float = 0.05
