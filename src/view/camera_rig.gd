@@ -1,6 +1,8 @@
 class_name CameraRig
 extends Node3D
-## Camera sau lưng, hơi cao, nhìn xa về phía trước (kiểu Bannerlord), đi theo hướng mặt của người chơi. Rung nhẹ khi có va chạm.
+## Camera sau lưng, hơi cao, nhìn xa về phía trước (kiểu Bannerlord). Rung nhẹ khi có va chạm.
+## Tự ngắm (free_look): người chơi xoay camera bằng turn(), nhân vật quay theo hướng camera.
+## Khoá mục tiêu: camera đi theo hướng mặt của nhân vật.
 
 var config: GameConfig
 var target: FighterView
@@ -8,6 +10,7 @@ var target: FighterView
 var obstacles: Array = []
 var camera: Camera3D
 var yaw: float = 0.0
+var free_look := true
 
 var _shake := 0.0
 var _dist := 0.0
@@ -28,6 +31,12 @@ func setup(p_config: GameConfig, p_target: FighterView) -> void:
 	_place(1.0)
 
 
+## Xoay camera (radian, dương là quay phải). Chỉ có tác dụng khi tự ngắm.
+func turn(angle: float) -> void:
+	if free_look:
+		yaw = wrapf(yaw - angle, -PI, PI)
+
+
 func shake(amount: float) -> void:
 	_shake = maxf(_shake, amount)
 
@@ -36,7 +45,8 @@ func _process(delta: float) -> void:
 	if target == null:
 		return
 	var k := 1.0 - exp(-config.camera_follow_speed * delta)
-	yaw = lerp_angle(yaw, target.rotation.y, k)
+	if not free_look:
+		yaw = lerp_angle(yaw, target.rotation.y, k)
 	_place(k)
 	_shake = maxf(0.0, _shake - delta * 0.6)
 

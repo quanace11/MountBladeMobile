@@ -62,6 +62,7 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 			if rules.parry_costs_stamina:
 				target.stamina = maxf(0.0, target.stamina - dmg * rules.block_stamina_per_damage)
 			attacker.set_state(S.STAGGER, ctx.ticks(rules.stagger_on_parried))
+			attacker.recoil = true
 			events.append(base.merged({"type": &"parried"}))
 			return
 		var cost := dmg * rules.block_stamina_per_damage
@@ -75,6 +76,7 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 			return
 		target.stamina -= cost
 		attacker.set_state(S.STAGGER, ctx.ticks(rules.stagger_on_blocked))
+		attacker.recoil = true
 		events.append(base.merged({"type": &"blocked"}))
 		return
 

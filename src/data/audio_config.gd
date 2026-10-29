@@ -1,6 +1,6 @@
 class_name AudioConfig
 extends Resource
-## Âm thanh cho từng sự kiện. Để trống thì không phát.
+## Âm thanh cho từng sự kiện. Để trống thì dùng tiếng tạo bằng code (SfxSynth).
 
 @export var swing: AudioStream
 @export var block: AudioStream

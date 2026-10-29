@@ -22,5 +22,12 @@ enum BlockScheme { BUTTON, CHEVRON }
 @export var block_button_radius: float = 80.0
 ## Mũi tên báo hướng đòn của địch. Mặc định tắt: người chơi đọc hướng từ động tác gồng.
 @export var show_attack_hint: bool = false
+## Tự ngắm: nửa phải, phần phía trên tỉ lệ này (0..1) là vùng kéo để xoay người/camera;
+## phần dưới là vùng vuốt chém.
+@export var look_zone_bottom_ratio: float = 0.5
+## Độ nhạy xoay: độ quay được cho mỗi px kéo ngang (theo độ phân giải thiết kế 1280x720).
+@export var look_sensitivity_deg: float = 0.3
+## Tốc độ xoay bằng phím Q/E trên PC (độ/giây).
+@export var key_turn_speed_deg: float = 160.0
 ## Phần trên cùng màn hình dành cho nút menu, không nhận điều khiển (0..1).
 @export var ignore_top_ratio: float = 0.13

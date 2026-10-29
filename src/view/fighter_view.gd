@@ -44,6 +44,7 @@ var _foot := {}
 var _left_hand_target := Vector3.ZERO
 
 var _flash := 0.0
+var _jolt := 0.0
 var _gait := 0.0
 var _gait_amount := 0.0
 var _local_vel := Vector2.ZERO
@@ -264,13 +265,20 @@ func sync(cur: FighterState, prev_pos: Vector2, prev_yaw: float, alpha: float, d
 	_update_gait(cur, delta)
 	_update_limbs()
 
+	_jolt = maxf(0.0, _jolt - delta * 6.0)
 	if _flash > 0.0:
 		_flash = maxf(0.0, _flash - delta * 5.0)
 		_armor_mat.set_shader_parameter("tint", def.armor_color.lerp(Color(1, 0.9, 0.85), _flash))
 
 
+## Bị chém trúng: giáp chớp sáng.
 func flash() -> void:
 	_flash = 1.0
+
+
+## Đỡ được đòn: tay cầm vũ khí bị đẩy lùi một chút rồi giữ lại thế đỡ, không chớp như bị trúng.
+func jolt(amount: float) -> void:
+	_jolt = maxf(_jolt, amount)
 
 
 func _update_hand_pose(cur: FighterState, delta: float) -> void:
@@ -288,8 +296,15 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 			pose = PoseSet.pose_name("block", cur.block_dir)
 			speed *= 1.6
 		S.STAGGER:
-			pose = "stagger"
+			if cur.recoil:
+				# Đòn bị đỡ: vũ khí dội ngược về phía vừa vung tới, người không ngả như bị trúng.
+				pose = PoseSet.pose_name("windup", cur.attack_dir)
+				speed *= poses.strike_blend_mult
+			else:
+				pose = "stagger"
 	var target: Array = poses.get_pose(pose)
+	if cur.state == S.BLOCK and _jolt > 0.0:
+		target = [target[0] + Vector3(0.0, -0.05, 0.14) * _jolt, target[1]]
 	var k := 1.0 - exp(-speed * delta)
 	_hand.position = _hand.position.lerp(target[0], k)
 	var q_to := Basis.from_euler(target[1] * (PI / 180.0)).get_rotation_quaternion()
@@ -319,9 +334,15 @@ func _update_torso(cur: FighterState, delta: float) -> void:
 				Dir.THRUST: twist = tw * 0.5; lean = -ln * 0.6
 				Dir.UP: lean = -ln * 1.5
 		S.BLOCK:
-			lean = -ln * 0.4
+			lean = -ln * 0.4 + ln * 0.6 * _jolt
 		S.STAGGER:
-			lean = ln * 1.5
+			if cur.recoil:
+				match cur.attack_dir:
+					Dir.LEFT: twist = tw * 0.6
+					Dir.RIGHT: twist = -tw * 0.6
+					Dir.UP: lean = ln * 0.5
+			else:
+				lean = ln * 1.5
 	var k := 1.0 - exp(-poses.blend_speed * delta)
 	_twist = lerpf(_twist, twist, k)
 	_lean = lerpf(_lean, lean, k)

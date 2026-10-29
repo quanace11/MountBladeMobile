@@ -11,6 +11,8 @@ var player_character_id: StringName = &"dao_tuong"
 var quality_id: StringName = &"medium"
 var block_scheme: int = InputConfig.BlockScheme.BUTTON
 var fps_cap_30: bool = false
+## true: người chơi tự xoay người bằng cách kéo (kiểu Bannerlord). false: tự quay về địch gần nhất.
+var free_aim: bool = true
 
 
 func _ready() -> void:
@@ -58,6 +60,7 @@ func save_settings() -> void:
 	cfg.set_value("game", "quality", quality_id)
 	cfg.set_value("game", "block_scheme", block_scheme)
 	cfg.set_value("game", "fps30", fps_cap_30)
+	cfg.set_value("game", "free_aim", free_aim)
 	cfg.save(SETTINGS_PATH)
 
 
@@ -71,3 +74,4 @@ func _load_settings() -> void:
 	quality_id = cfg.get_value("game", "quality", quality_id)
 	block_scheme = cfg.get_value("game", "block_scheme", block_scheme)
 	fps_cap_30 = cfg.get_value("game", "fps30", fps_cap_30)
+	free_aim = cfg.get_value("game", "free_aim", free_aim)

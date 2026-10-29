@@ -9,7 +9,7 @@ extends Resource
 @export var arena_radius: float = 14.0
 ## Khoảng cách xuất phát giữa người chơi và địch.
 @export var spawn_distance: float = 6.0
-## Khoảng nhìn để tự quay mặt về phía địch gần nhất.
+## Khoảng nhìn để tự quay mặt về phía địch gần nhất (bot, và người chơi khi bật khoá mục tiêu).
 @export var auto_face_range: float = 12.0
 ## Seed ngẫu nhiên (0 = ngẫu nhiên theo thời gian).
 @export var rng_seed: int = 0
