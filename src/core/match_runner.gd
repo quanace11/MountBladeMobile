@@ -11,6 +11,7 @@ var views: Dictionary = {}  # id -> FighterView
 var player_id: int = -1
 var camera_rig: CameraRig
 var touch: TouchController
+var player_src: PlayerCommandSource
 var vfx: VfxPool
 var hud: Hud
 
@@ -64,9 +65,10 @@ func _ready() -> void:
 	add_child(touch)
 	touch.setup(ConfigDB.input, Game.block_scheme)
 
-	var player_src := PlayerCommandSource.new(touch, func() -> float: return camera_rig.yaw)
+	player_src = PlayerCommandSource.new(touch, func() -> float: return camera_rig.yaw)
 	player_src.fighter_id = player_id
 	sources.append(player_src)
+	set_free_aim(Game.free_aim)
 
 	var tokens := AttackTokenManager.new(cfg.max_attackers_at_once)
 	var seed_base := cfg.rng_seed if cfg.rng_seed != 0 else int(Time.get_unix_time_from_system())
@@ -92,7 +94,16 @@ func _exit_tree() -> void:
 		EventBus.sim_event.disconnect(_on_event)
 
 
+## Bật/tắt tự ngắm: kéo để xoay người, hoặc tự quay về địch gần nhất.
+func set_free_aim(on: bool) -> void:
+	camera_rig.free_look = on
+	touch.free_look = on
+	player_src.free_aim = on
+
+
 func _process(delta: float) -> void:
+	var turn := touch.consume_look() + KeyboardController.turn_axis() * deg_to_rad(ConfigDB.input.key_turn_speed_deg) * delta
+	camera_rig.turn(turn)
 	var dt := sim.ctx.dt
 	_acc += delta
 	var steps := 0
@@ -124,9 +135,18 @@ func player() -> FighterState:
 
 func _on_event(e: Dictionary) -> void:
 	match e["type"]:
-		&"blocked", &"parried", &"guard_broken":
-			vfx.sparks(_contact_point(e))
+		&"blocked":
+			vfx.clash(_clash_point(e))
+			(views[e["target"]] as FighterView).jolt(1.0)
 			_shake_if_player(e, ConfigDB.game.camera_shake_block)
+		&"parried":
+			vfx.clash(_clash_point(e), 1.8, Color(0.75, 0.9, 1.0))
+			(views[e["target"]] as FighterView).jolt(0.6)
+			_shake_if_player(e, ConfigDB.game.camera_shake_block * 1.5)
+		&"guard_broken":
+			vfx.clash(_clash_point(e), 1.4, Color(1.0, 0.55, 0.3))
+			(views[e["target"]] as FighterView).jolt(1.6)
+			_shake_if_player(e, ConfigDB.game.camera_shake_hit)
 		&"hit":
 			vfx.blood(_contact_point(e))
 			(views[e["target"]] as FighterView).flash()
@@ -140,6 +160,18 @@ func _contact_point(e: Dictionary) -> Vector3:
 	var t := sim.state.get_fighter(e["target"])
 	var p := a.pos.lerp(t.pos, 0.7)
 	return Vector3(p.x, 1.3, p.y)
+
+
+## Chỗ hai binh khí chạm nhau: sát người đỡ, cao theo hướng đòn.
+func _clash_point(e: Dictionary) -> Vector3:
+	var a := sim.state.get_fighter(e["id"])
+	var t := sim.state.get_fighter(e["target"])
+	var p := a.pos.lerp(t.pos, 0.6)
+	var h := 1.4
+	match int(e["dir"]):
+		Dir.UP: h = 1.8
+		Dir.THRUST: h = 1.15
+	return Vector3(p.x, h, p.y)
 
 
 func _shake_if_player(e: Dictionary, amount: float) -> void:

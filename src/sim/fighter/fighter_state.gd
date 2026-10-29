@@ -22,6 +22,8 @@ var attack_dir: int = Dir.NONE
 var release_queued: bool = false
 var block_dir: int = Dir.NONE
 var block_started_tick: int = -1000
+## Đang khựng vì đòn mình bị đỡ (vũ khí bị dội lại), khác với khựng vì bị trúng đòn.
+var recoil: bool = false
 ## Tick còn lại trước khi thể lực bắt đầu hồi.
 var stamina_wait: int = 0
 ## Vận tốc tick vừa rồi, view dùng để chọn dáng chạy.
@@ -48,6 +50,7 @@ func set_state(s: int, duration: int = 0) -> void:
 	state = s
 	state_ticks = 0
 	state_duration = duration
+	recoil = false
 
 
 func to_dict() -> Dictionary:
@@ -56,7 +59,7 @@ func to_dict() -> Dictionary:
 		"pos": [pos.x, pos.y], "yaw": yaw, "hp": hp, "st": stamina,
 		"state": state, "sticks": state_ticks, "sdur": state_duration,
 		"adir": attack_dir, "rq": release_queued, "bdir": block_dir,
-		"bstart": block_started_tick, "swait": stamina_wait,
+		"bstart": block_started_tick, "swait": stamina_wait, "rc": recoil,
 		"vel": [velocity.x, velocity.y],
 	}
 
@@ -79,5 +82,6 @@ static func from_dict(d: Dictionary) -> FighterState:
 	f.block_dir = int(d["bdir"])
 	f.block_started_tick = int(d["bstart"])
 	f.stamina_wait = int(d["swait"])
+	f.recoil = bool(d.get("rc", false))
 	f.velocity = Vector2(d["vel"][0], d["vel"][1])
 	return f

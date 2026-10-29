@@ -2,7 +2,7 @@
 
 Game đấu tướng 3D thời cổ cho điện thoại, đánh và đỡ theo 4 hướng kiểu Mount & Blade.
 Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằng khối hình có khớp tay chân (chưa phải model 3D thật),
-đấu trường dùng texture và bầu trời thật từ Poly Haven (CC0, xem `assets/CREDITS.md`), chưa có âm thanh.
+đấu trường dùng texture và bầu trời thật từ Poly Haven (CC0, xem `assets/CREDITS.md`), âm thanh tạm tạo bằng code (tiếng binh khí va nhau, chém trúng, vung vũ khí).
 
 - Godot 4.6, GDScript, renderer Compatibility (nhẹ, chạy được trên nhiều máy Android).
 - Chơi với bot: 1 vs 1 đến 1 vs 4, bot dễ hoặc khó.
@@ -11,15 +11,19 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 1. Mở Godot 4.6, chọn *Import* và trỏ tới thư mục này.
 2. Bấm Play. Trên PC dùng chuột như ngón tay, hoặc bàn phím:
-   - `WASD`: đi.
+   - `WASD`: đi. `Q` / `E`: xoay người (hoặc kéo chuột ở nửa trên bên phải màn hình).
    - Giữ `I` / `J` / `K` / `L`: gồng bổ trên / trái / đâm / phải; nhả phím để chém.
    - Giữ phím mũi tên: đỡ theo hướng đó.
 
 ## Điều khiển trên điện thoại
 
-- **Tay trái**: joystick di chuyển. Nhân vật tự quay mặt về địch gần nhất; không có chọn mục tiêu.
+- **Tay trái**: joystick di chuyển, theo hướng camera.
   Di chuyển có quán tính, đi ngang và đi lùi chậm hơn đi thẳng, xoay người chậm lại khi đang chém (chỉnh trong `config/characters/`).
-- **Tay phải**: đặt ngón tay, kéo theo hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó), nhả tay để chém.
+- **Hướng mặt** (chọn trong menu hoặc nút *Ngắm* trên góc phải khi đang đánh):
+  - *Tự xoay* (mặc định, như Bannerlord): kéo ngang ở **nửa trên bên phải** màn hình để xoay camera, nhân vật quay theo
+    hướng camera với tốc độ xoay có giới hạn. Chém trúng ai là do bạn quay mặt về đâu, nên đi vòng, né sườn, chém lệch đều có tác dụng.
+  - *Khoá địch gần*: nhân vật tự quay mặt về địch gần nhất như bản cũ. Bot luôn dùng kiểu này.
+- **Tay phải**, nửa dưới: đặt ngón tay, kéo theo hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó), nhả tay để chém.
   Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
 - **Đỡ**, chọn trong menu hoặc nút trên góc phải khi đang đánh:
   - *Nút ĐỠ*: giữ nút và kéo về phía đòn đang đến.
@@ -29,6 +33,8 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - Giơ đỡ đúng hướng sát lúc đòn tới là **đỡ hoàn hảo**: người chém bị khựng lâu.
 - Đỡ tốn thể lực; hết thể lực thì bị phá thế. Đòn từ sau lưng hoặc bên sườn không đỡ được.
 - Chém trúng địch đầu tiên trong tầm và cung chém; ngoài tầm thì hụt.
+- Đỡ được thì có chớp sáng, tia lửa và tiếng binh khí va nhau; vũ khí người chém bị dội ngược lại.
+  Bị chém trúng thì máu bắn, giáp chớp và tiếng phập.
 
 ## Cấu trúc
 

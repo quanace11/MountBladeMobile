@@ -34,6 +34,8 @@ func test_correct_block_takes_no_damage() -> void:
 	check_eq(b.hp, b.def.max_hp, "B không mất máu")
 	check(b.stamina < b.def.max_stamina, "B mất thể lực khi đỡ")
 	check_eq(sim.state.get_fighter(r[1][0]).state, FighterState.State.STAGGER, "A bị khựng")
+	check(sim.state.get_fighter(r[1][0]).recoil, "A khựng vì bị đỡ (vũ khí dội lại), không phải vì trúng đòn")
+	check_eq(b.state, FighterState.State.BLOCK, "B vẫn giữ thế đỡ, không bị khựng")
 
 
 func test_wrong_block_takes_damage() -> void:
@@ -45,6 +47,7 @@ func test_wrong_block_takes_damage() -> void:
 	var b := sim.state.get_fighter(ids[1])
 	check(not e.is_empty(), "đỡ sai hướng phải trúng")
 	check(b.hp < b.def.max_hp, "B mất máu")
+	check(not b.recoil, "trúng đòn là khựng thường")
 
 
 func test_parry_when_block_is_raised_late() -> void:

@@ -40,7 +40,7 @@ func step(commands: Dictionary) -> Array:
 
 	for f in state.fighters:
 		var cmd: FighterCommand = commands.get(f.id, empty)
-		var target := nearest_enemy(f, ctx.config.auto_face_range)
+		var target: FighterState = null if cmd.has_face else nearest_enemy(f, ctx.config.auto_face_range)
 		FighterSim.move_and_face(f, cmd, target.pos if target else Vector2.ZERO, target != null, ctx)
 
 	_separate_and_clamp()

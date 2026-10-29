@@ -35,6 +35,8 @@ func _ready() -> void:
 		Game.apply_fps_cap(), [&"low", &"medium", &"high"])
 	_row(box, "Cách đỡ", {&"0": "Nút ĐỠ", &"1": "Vuốt gấp khúc"}, StringName(str(Game.block_scheme)), func(id): Game.block_scheme = int(String(id)))
 
+	_row(box, "Hướng mặt", {&"1": "Tự xoay (kéo)", &"0": "Khoá địch gần"}, &"1" if Game.free_aim else &"0", func(id): Game.free_aim = id == &"1", [&"1", &"0"])
+
 	var fps := CheckButton.new()
 	fps.text = "Khóa 30 fps (tiết kiệm pin)"
 	fps.button_pressed = Game.fps_cap_30
@@ -52,7 +54,7 @@ func _ready() -> void:
 	box.add_child(start)
 
 	var help := Label.new()
-	help.text = "Tay trái: joystick di chuyển. Tay phải: kéo để gồng, nhả để chém (lên = bổ, xuống = đâm, trái/phải = chém ngang).\nĐỡ: giữ nút ĐỠ và kéo về phía đòn đến, hoặc vuốt nét gấp ^ < > v.\nPC: WASD đi, giữ I/J/K/L để gồng rồi nhả để chém, giữ phím mũi tên để đỡ."
+	help.text = "Tay trái: joystick di chuyển. Tay phải, nửa dưới: kéo để gồng, nhả để chém (lên = bổ, xuống = đâm, trái/phải = chém ngang). Tay phải, nửa trên: kéo ngang để xoay người.\nĐỡ: giữ nút ĐỠ và kéo về phía đòn đến, hoặc vuốt nét gấp ^ < > v.\nPC: WASD đi, Q/E xoay người, giữ I/J/K/L để gồng rồi nhả để chém, giữ phím mũi tên để đỡ."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_font_size_override("font_size", 18)
 	help.add_theme_color_override("font_color", Color(0.85, 0.8, 0.7))

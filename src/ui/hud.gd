@@ -9,6 +9,7 @@ var quality: QualityManager
 var _font: Font
 var _fps_label: Label
 var _scheme_btn: Button
+var _aim_btn: Button
 var _end_panel: PanelContainer
 var _end_label: Label
 
@@ -46,6 +47,11 @@ func setup(p_runner: MatchRunner, p_quality: QualityManager) -> void:
 	top.add_child(_scheme_btn)
 	_update_scheme_label()
 
+	_aim_btn = _button("")
+	_aim_btn.pressed.connect(_toggle_aim)
+	top.add_child(_aim_btn)
+	_update_aim_label()
+
 	_build_end_panel()
 	EventBus.match_over.connect(_on_match_over)
 
@@ -73,6 +79,17 @@ func _toggle_scheme() -> void:
 
 func _update_scheme_label() -> void:
 	_scheme_btn.text = "Đỡ: nút" if Game.block_scheme == InputConfig.BlockScheme.BUTTON else "Đỡ: vuốt gấp"
+
+
+func _toggle_aim() -> void:
+	Game.free_aim = not Game.free_aim
+	runner.set_free_aim(Game.free_aim)
+	Game.save_settings()
+	_update_aim_label()
+
+
+func _update_aim_label() -> void:
+	_aim_btn.text = "Ngắm: tự xoay" if Game.free_aim else "Ngắm: khoá"
 
 
 func _build_end_panel() -> void:

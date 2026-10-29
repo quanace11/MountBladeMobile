@@ -1,7 +1,8 @@
 class_name TouchController
 extends Node
 ## Nhận chạm đa điểm, chia ra: nửa trái là joystick di chuyển, nửa phải là vùng chiến đấu,
-## và nút ĐỠ (khi dùng kiểu nút). Kết quả đọc qua move_vector(), combat, block_dir.
+## và nút ĐỠ (khi dùng kiểu nút). Khi tự ngắm, phần trên của nửa phải là vùng kéo để xoay người.
+## Kết quả đọc qua move_vector(), combat, block_dir, consume_look().
 
 var cfg: InputConfig
 var combat: GestureParser
@@ -15,6 +16,12 @@ var combat_index: int = -1
 var block_index: int = -1
 var block_button_dir: int = Dir.NONE
 var block_touch_pos := Vector2.ZERO
+
+## Bật vùng kéo xoay người (chế độ tự ngắm).
+var free_look := true
+var look_index: int = -1
+var look_pos := Vector2.ZERO
+var _look_accum := 0.0
 
 
 func setup(p_cfg: InputConfig, scheme: int) -> void:
@@ -57,6 +64,9 @@ func _on_down(index: int, pos: Vector2) -> void:
 		joy_index = index
 		joy_origin = pos
 		joy_pos = pos
+	elif free_look and look_index == -1 and pos.x >= size.x * cfg.left_zone_ratio and pos.y < size.y * cfg.look_zone_bottom_ratio:
+		look_index = index
+		look_pos = pos
 	elif combat_index == -1 and pos.x >= size.x * cfg.left_zone_ratio:
 		combat_index = index
 		combat.touch_down(pos)
@@ -67,6 +77,11 @@ func _on_move(index: int, pos: Vector2) -> void:
 		joy_pos = pos
 	elif index == combat_index:
 		combat.touch_move(pos)
+	elif index == look_index:
+		# Đổi px màn hình thực về px thiết kế để độ nhạy giống nhau trên mọi máy.
+		var k := 720.0 / maxf(1.0, get_viewport().get_visible_rect().size.y)
+		_look_accum += (pos.x - look_pos.x) * k
+		look_pos = pos
 	elif index == block_index:
 		block_touch_pos = pos
 		var v := pos - block_button_center()
@@ -83,6 +98,15 @@ func _on_up(index: int, pos: Vector2) -> void:
 	elif index == block_index:
 		block_index = -1
 		block_button_dir = Dir.NONE
+	elif index == look_index:
+		look_index = -1
+
+
+## Góc xoay (radian, dương là quay phải) do kéo vùng xoay từ lần đọc trước.
+func consume_look() -> float:
+	var a := deg_to_rad(_look_accum * cfg.look_sensitivity_deg)
+	_look_accum = 0.0
+	return a
 
 
 ## Vector joystick theo màn hình, x sang phải, y xuống dưới, độ dài 0..1.

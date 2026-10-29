@@ -1,7 +1,7 @@
 class_name KeyboardController
 extends RefCounted
 ## Bàn phím để thử nhanh trên PC.
-## WASD: đi. Giữ I/J/K/L: gồng trên/trái/đâm/phải, nhả để chém. Giữ phím mũi tên: đỡ theo hướng đó.
+## WASD: đi. Q/E: xoay người. Giữ I/J/K/L: gồng trên/trái/đâm/phải, nhả để chém. Giữ phím mũi tên: đỡ theo hướng đó.
 
 var _held_attack: int = Dir.NONE
 var _release := false
@@ -17,6 +17,14 @@ func move_vector() -> Vector2:
 	if Input.is_key_pressed(KEY_W): v.y -= 1.0
 	if Input.is_key_pressed(KEY_S): v.y += 1.0
 	return v.limit_length(1.0)
+
+
+## -1 xoay trái, 1 xoay phải.
+static func turn_axis() -> float:
+	var v := 0.0
+	if Input.is_key_pressed(KEY_Q): v -= 1.0
+	if Input.is_key_pressed(KEY_E): v += 1.0
+	return v
 
 
 func block_dir() -> int:

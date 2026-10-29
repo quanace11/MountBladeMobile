@@ -1,6 +1,6 @@
 class_name TouchOverlay
 extends Control
-## Vẽ joystick, nút ĐỠ và nét vuốt. Chỉ đọc TouchController.
+## Vẽ joystick, nút ĐỠ, nét vuốt và vùng kéo xoay người. Chỉ đọc TouchController.
 
 var touch: TouchController
 var _font: Font
@@ -46,7 +46,14 @@ func _draw() -> void:
 		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2]]), col, 6.0, true)
 		draw_circle(pts[0], 10, col)
 
-	draw_string(_font, Vector2(size.x * 0.62, size.y * 0.2), "Vùng chém: kéo để gồng, nhả để chém", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.25))
+	var x0 := size.x * cfg.left_zone_ratio
+	if touch.free_look:
+		var y := size.y * cfg.look_zone_bottom_ratio
+		draw_dashed_line(Vector2(x0 + 20, y), Vector2(size.x - 20, y), Color(1, 1, 1, 0.12), 2.0, 12.0)
+		draw_string(_font, Vector2(size.x * 0.62, size.y * 0.2), "Kéo ngang để xoay người", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.25))
+		draw_string(_font, Vector2(size.x * 0.62, y + 24), "Vùng chém: kéo để gồng, nhả để chém", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.25))
+	else:
+		draw_string(_font, Vector2(size.x * 0.62, size.y * 0.2), "Vùng chém: kéo để gồng, nhả để chém", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.25))
 
 
 func _draw_dir_arrow(center: Vector2, dir: int, dist: float, col: Color) -> void:

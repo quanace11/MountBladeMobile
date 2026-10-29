@@ -1,11 +1,13 @@
 class_name PlayerCommandSource
 extends CommandSource
 ## Gộp cảm ứng và bàn phím thành FighterCommand. Hướng đi đổi theo góc camera.
+## Tự ngắm: nhân vật quay mặt theo hướng camera.
 
 var touch: TouchController
 var keyboard := KeyboardController.new()
 ## Trả về góc yaw hiện tại của camera.
 var camera_yaw: Callable
+var free_aim := true
 
 
 func _init(p_touch: TouchController, p_camera_yaw: Callable) -> void:
@@ -24,6 +26,8 @@ func get_command(_state: MatchState) -> FighterCommand:
 	var fwd := Vector2(-sin(yaw), -cos(yaw))
 	var right := Vector2(cos(yaw), -sin(yaw))
 	c.move = right * screen.x + fwd * (-screen.y)
+	c.has_face = free_aim
+	c.face_yaw = yaw
 
 	c.block_dir = touch.block_dir()
 	if c.block_dir == Dir.NONE:

@@ -109,13 +109,22 @@ static func move_and_face(f: FighterState, cmd: FighterCommand, face_target: Vec
 	f.velocity = f.velocity.move_toward(desired, rate * ctx.dt)
 	f.pos += f.velocity * ctx.dt
 
-	var want_dir := Vector2.ZERO
-	if has_target:
-		want_dir = face_target - f.pos
-	elif mv.length() > 0.1:
-		want_dir = mv
-	if want_dir.length() > 0.001 and f.state != S.STAGGER:
-		var want := FighterState.yaw_from_direction(want_dir.normalized())
+	# Người chơi tự ngắm thì quay theo hướng lệnh; không thì nhìn địch gần nhất, hoặc hướng đang đi.
+	var want := f.yaw
+	var turning := false
+	if cmd.has_face:
+		want = cmd.face_yaw
+		turning = true
+	else:
+		var want_dir := Vector2.ZERO
+		if has_target:
+			want_dir = face_target - f.pos
+		elif mv.length() > 0.1:
+			want_dir = mv
+		if want_dir.length() > 0.001:
+			want = FighterState.yaw_from_direction(want_dir.normalized())
+			turning = true
+	if turning and f.state != S.STAGGER:
 		var turn_mult := ctx.rules.turn_mult_attack if f.state == S.WINDUP or f.state == S.RELEASE else 1.0
 		var max_step := deg_to_rad(f.def.turn_speed_deg) * turn_mult * ctx.dt
 		var diff := wrapf(want - f.yaw, -PI, PI)
