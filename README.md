@@ -1,7 +1,8 @@
 # Đấu Tướng (Mount Blade Mobile)
 
 Game đấu tướng 3D thời cổ cho điện thoại, đánh và đỡ theo 4 hướng kiểu Mount & Blade.
-Bản này là **bản thử cảm giác đánh đỡ**: nhân vật đang dựng tạm bằng khối hình, chưa có âm thanh.
+Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằng khối hình có khớp tay chân (chưa phải model 3D thật),
+đấu trường dùng texture và bầu trời thật từ Poly Haven (CC0, xem `assets/CREDITS.md`), chưa có âm thanh.
 
 - Godot 4.6, GDScript, renderer Compatibility (nhẹ, chạy được trên nhiều máy Android).
 - Chơi với bot: 1 vs 1 đến 1 vs 4, bot dễ hoặc khó.
@@ -17,6 +18,7 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật đang dựn
 ## Điều khiển trên điện thoại
 
 - **Tay trái**: joystick di chuyển. Nhân vật tự quay mặt về địch gần nhất; không có chọn mục tiêu.
+  Di chuyển có quán tính, đi ngang và đi lùi chậm hơn đi thẳng, xoay người chậm lại khi đang chém (chỉnh trong `config/characters/`).
 - **Tay phải**: đặt ngón tay, kéo theo hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó), nhả tay để chém.
   Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
 - **Đỡ**, chọn trong menu hoặc nút trên góc phải khi đang đánh:
@@ -38,7 +40,7 @@ config/            Toàn bộ số liệu (.tres, chỉnh trong Inspector của 
   matches/         Kịch bản 1v1 .. 1v4
   quality/         Preset đồ họa thấp / vừa / cao
   input/           Bố cục và ngưỡng cảm ứng
-  visual/          Tư thế tay cầm vũ khí của nhân vật tạm
+  visual/          Tư thế tay cầm vũ khí, đấu trường (texture, số nhà/cây/đá, hàng rào)
   combat_rules.tres, game_config.tres, audio.tres
 src/
   core/            Autoload (ConfigDB, EventBus, Game), MatchRunner ghép các tầng, QualityManager
@@ -50,6 +52,7 @@ src/
   audio/           AudioDirector
   ui/              Menu, HUD, lớp vẽ joystick/nút
   net/             CommandSource: chỗ cắm nguồn lệnh mạng khi làm PvP
+assets/            texture, bầu trời, shader (giáp lá, nền, đồi, cờ, áo choàng)
 scenes/            main_menu.tscn, match.tscn
 tests/             Test tự động cho luật đánh đỡ và chạy thử cả game
 ```
@@ -73,7 +76,7 @@ Sau đó Project > Export > Android (đã có sẵn preset, chỉ xuất arm64) 
 
 ## Còn thiếu
 
-- Model 3D và animation thật (đang dùng khối hình). Khi có model, chỉ cần thay `FighterView`;
+- Model 3D và animation thật (đang dùng khối hình có khớp). Khi có model, chỉ cần thay `FighterView`;
   sim và config giữ nguyên.
 - Âm thanh: khung `AudioDirector` đã nghe sự kiện, chỉ cần gán file vào `config/audio.tres`.
 - Ánh sáng bake sẵn (LightmapGI) cho đấu trường.

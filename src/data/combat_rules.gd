@@ -21,6 +21,8 @@ extends Resource
 ## Hệ số tốc độ di chuyển khi gồng, khi đỡ.
 @export var move_mult_windup: float = 0.6
 @export var move_mult_block: float = 0.5
+## Hệ số tốc độ xoay người khi đang gồng hoặc đang chém.
+@export var turn_mult_attack: float = 0.5
 ## Được hủy gồng để chuyển sang đỡ (như Mount & Blade).
 @export var allow_windup_cancel_to_block: bool = true
 ## Thể lực bắt đầu hồi sau khi dùng (giây).

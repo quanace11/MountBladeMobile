@@ -8,6 +8,7 @@ var rules: CombatRules
 var input: InputConfig
 var poses: PoseSet
 var audio: AudioConfig
+var arena: ArenaDef
 var characters: Dictionary = {}
 var bots: Dictionary = {}
 var matches: Dictionary = {}
@@ -24,6 +25,7 @@ func reload() -> void:
 	input = load(ROOT + "input/touch.tres")
 	poses = load(ROOT + "visual/poses.tres")
 	audio = load(ROOT + "audio.tres")
+	arena = load(ROOT + "visual/arena.tres")
 	characters = _load_dir("characters")
 	bots = _load_dir("ai")
 	matches = _load_dir("matches")

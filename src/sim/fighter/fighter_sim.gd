@@ -99,7 +99,14 @@ static func move_and_face(f: FighterState, cmd: FighterCommand, face_target: Vec
 		S.STAGGER:
 			mult = 0.0
 	var mv := cmd.move.limit_length(1.0)
-	f.velocity = mv * f.def.move_speed * mult
+	# Đi lùi, đi ngang chậm hơn đi thẳng; tốc độ thay đổi dần theo gia tốc.
+	var dir_mult := 1.0
+	if mv.length() > 0.01:
+		var fwd_dot := mv.normalized().dot(f.forward())
+		dir_mult = lerpf(f.def.strafe_speed_mult, 1.0, fwd_dot) if fwd_dot >= 0.0 else lerpf(f.def.strafe_speed_mult, f.def.backward_speed_mult, -fwd_dot)
+	var desired := mv * f.def.move_speed * mult * dir_mult
+	var rate := f.def.acceleration if desired.length() >= f.velocity.length() else f.def.deceleration
+	f.velocity = f.velocity.move_toward(desired, rate * ctx.dt)
 	f.pos += f.velocity * ctx.dt
 
 	var want_dir := Vector2.ZERO
@@ -109,6 +116,7 @@ static func move_and_face(f: FighterState, cmd: FighterCommand, face_target: Vec
 		want_dir = mv
 	if want_dir.length() > 0.001 and f.state != S.STAGGER:
 		var want := FighterState.yaw_from_direction(want_dir.normalized())
-		var max_step := deg_to_rad(f.def.turn_speed_deg) * ctx.dt
+		var turn_mult := ctx.rules.turn_mult_attack if f.state == S.WINDUP or f.state == S.RELEASE else 1.0
+		var max_step := deg_to_rad(f.def.turn_speed_deg) * turn_mult * ctx.dt
 		var diff := wrapf(want - f.yaw, -PI, PI)
 		f.yaw = wrapf(f.yaw + clampf(diff, -max_step, max_step), -PI, PI)

@@ -32,7 +32,7 @@ func _ready() -> void:
 		var spread := (i - (n - 1) * 0.5) * 2.0
 		sim.add_fighter(md.enemy_characters[i], 1, Vector2(spread, -half), FighterState.yaw_from_direction(Vector2(0, 1)))
 
-	ArenaBuilder.build(self, cfg, quality)
+	ArenaBuilder.build(self, cfg, quality, ConfigDB.arena)
 
 	for f in sim.state.fighters:
 		var v := FighterView.new()
@@ -46,6 +46,7 @@ func _ready() -> void:
 	camera_rig = CameraRig.new()
 	add_child(camera_rig)
 	camera_rig.setup(cfg, views[player_id])
+	camera_rig.obstacles = views.values()
 
 	vfx = VfxPool.new()
 	add_child(vfx)

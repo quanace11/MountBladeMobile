@@ -10,6 +10,12 @@ extends Resource
 @export var stamina_regen: float = 18.0
 ## Tốc độ chạy (mét/giây).
 @export var move_speed: float = 3.2
+## Tăng tốc và giảm tốc (mét/giây²), tạo cảm giác có quán tính như Bannerlord.
+@export var acceleration: float = 9.0
+@export var deceleration: float = 12.0
+## Hệ số tốc độ khi đi ngang và đi lùi so với đi thẳng.
+@export var strafe_speed_mult: float = 0.8
+@export var backward_speed_mult: float = 0.6
 ## Tốc độ xoay người (độ/giây).
 @export var turn_speed_deg: float = 360.0
 ## Bán kính thân dùng để đẩy nhau ra.
@@ -20,3 +26,8 @@ extends Resource
 @export var cloth_color: Color = Color(0.15, 0.15, 0.15)
 @export var skin_color: Color = Color(0.85, 0.66, 0.5)
 @export var height: float = 1.8
+## Màu áo choàng; trong suốt hoàn toàn = không có áo choàng.
+@export var cape_color: Color = Color(0.55, 0.06, 0.05)
+## Độ dài râu (mét), 0 = không râu.
+@export var beard_length: float = 0.12
+@export var hair_color: Color = Color(0.05, 0.04, 0.04)
