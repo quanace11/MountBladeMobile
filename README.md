@@ -69,6 +69,18 @@ godot --headless --path . -s tests/run_tests.gd     # luật đánh đỡ, vuố
 godot --headless --path . -s tests/smoke_match.gd   # mở menu, vào trận 1 vs 3, chạy tới hết trận
 ```
 
+## Cài thử trên điện thoại (không cần gỡ lỗi USB)
+
+Mỗi lần push, GitHub Actions (`.github/workflows/build.yml`) tự build:
+
+- **APK**: trang [Releases](https://github.com/quanace11/MountBladeMobile/releases), mỗi nhánh một bản thử
+  (`build-main`, `build-<tên nhánh>`). Mở bằng trình duyệt trên điện thoại, tải `DauTuong.apk`, cho phép
+  "Cài ứng dụng không rõ nguồn gốc" cho trình duyệt rồi cài. Không cần bật chế độ nhà phát triển.
+- **Web** (nhánh main): https://quanace11.github.io/MountBladeMobile/ , mở thẳng trên trình duyệt điện thoại.
+  Cần bật một lần: *Settings > Pages > Source: GitHub Actions*.
+
+APK được ký bằng khóa debug cố định trong `.github/android/debug.keystore`, nên bản mới cài đè lên bản cũ được.
+
 ## Xuất APK Android
 
 Cần cài Android SDK, JDK 17 và export templates của Godot 4.6 (Editor > Manage Export Templates).
