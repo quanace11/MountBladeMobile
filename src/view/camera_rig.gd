@@ -1,6 +1,6 @@
 class_name CameraRig
 extends Node3D
-## Camera sau vai, đi theo hướng mặt của người chơi. Rung nhẹ khi có va chạm.
+## Camera sau lưng, hơi cao, nhìn xa về phía trước (kiểu Bannerlord), đi theo hướng mặt của người chơi. Rung nhẹ khi có va chạm.
 
 var config: GameConfig
 var target: FighterView
@@ -18,7 +18,7 @@ func setup(p_config: GameConfig, p_target: FighterView) -> void:
 	config = p_config
 	target = p_target
 	camera = Camera3D.new()
-	camera.fov = 60.0
+	camera.fov = config.camera_fov
 	camera.near = 0.1
 	camera.far = 120.0
 	add_child(camera)
@@ -48,7 +48,7 @@ func _place(k: float) -> void:
 	_dist = lerpf(_dist, _clear_distance(base, fwd), k)
 	var want := base - fwd * _dist + right * config.camera_shoulder_offset + Vector3.UP * config.camera_height
 	global_position = global_position.lerp(want, k)
-	var look := base + Vector3.UP * 1.3 + fwd * 3.0 + right * config.camera_shoulder_offset * 0.5
+	var look := base + Vector3.UP * config.camera_look_height + fwd * config.camera_look_ahead + right * config.camera_shoulder_offset * 0.5
 	if _shake > 0.0:
 		look += Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), 0) * _shake
 	camera.look_at_from_position(global_position, look, Vector3.UP)
