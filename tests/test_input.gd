@@ -40,3 +40,18 @@ func test_button_scheme_ignores_chevron() -> void:
 	var p := _parser(InputConfig.BlockScheme.BUTTON)
 	_stroke(p, [Vector2(900, 500), Vector2(940, 440), Vector2(980, 380), Vector2(1020, 440), Vector2(1060, 500)])
 	check_eq(p.block_dir, Dir.NONE, "kiểu nút không đỡ bằng vuốt")
+
+
+func test_button_scheme_tap_attacks_default_dir() -> void:
+	var p := _parser(InputConfig.BlockScheme.BUTTON)
+	p.touch_down(Vector2(1100, 490))
+	p.touch_up(Vector2(1102, 491))
+	check(p.consume_release(), "chạm nhanh nút CHÉM là chém")
+	check_eq(p.attack_dir, p.cfg.attack_tap_dir, "chém theo hướng mặc định")
+
+
+func test_chevron_scheme_tap_does_nothing() -> void:
+	var p := _parser(InputConfig.BlockScheme.CHEVRON)
+	p.touch_down(Vector2(1100, 490))
+	p.touch_up(Vector2(1102, 491))
+	check(not p.consume_release(), "kiểu vuốt: chạm nhanh không chém")

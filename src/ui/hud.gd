@@ -72,7 +72,7 @@ func _toggle_scheme() -> void:
 
 
 func _update_scheme_label() -> void:
-	_scheme_btn.text = "Đỡ: nút" if Game.block_scheme == InputConfig.BlockScheme.BUTTON else "Đỡ: vuốt gấp"
+	_scheme_btn.text = "Nút chém/đỡ" if Game.block_scheme == InputConfig.BlockScheme.BUTTON else "Đỡ: vuốt gấp"
 
 
 func _build_end_panel() -> void:

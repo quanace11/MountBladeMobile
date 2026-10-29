@@ -19,11 +19,11 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 - **Tay trái**: joystick di chuyển. Nhân vật tự quay mặt về địch gần nhất; không có chọn mục tiêu.
   Di chuyển có quán tính, đi ngang và đi lùi chậm hơn đi thẳng, xoay người chậm lại khi đang chém (chỉnh trong `config/characters/`).
-- **Tay phải**: đặt ngón tay, kéo theo hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó), nhả tay để chém.
-  Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
-- **Đỡ**, chọn trong menu hoặc nút trên góc phải khi đang đánh:
-  - *Nút ĐỠ*: giữ nút và kéo về phía đòn đang đến.
-  - *Vuốt gấp khúc*: một nét có góc gấp `^` đỡ trên, `<` đỡ trái, `>` đỡ phải, `v` đỡ đâm. Giữ ngón tay là giữ thế đỡ.
+- **Tay phải**, chọn kiểu trong menu hoặc nút trên cùng khi đang đánh:
+  - *Nút CHÉM + ĐỠ* (mặc định): giữ nút CHÉM và kéo theo hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó), nhả tay để chém.
+    Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang. Chạm nhanh nút CHÉM là chém ngang từ phải (đổi trong `config/input/touch.tres`).
+    Giữ nút ĐỠ và kéo về phía đòn đang đến.
+  - *Vuốt gấp khúc*: cả nửa phải màn hình là vùng vuốt. Kéo thẳng rồi nhả là chém; một nét có góc gấp `^` đỡ trên, `<` đỡ trái, `>` đỡ phải, `v` đỡ đâm. Giữ ngón tay là giữ thế đỡ.
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
   (A chém từ bên phải của A thì B phải đỡ bên trái của B).
 - Giơ đỡ đúng hướng sát lúc đòn tới là **đỡ hoàn hảo**: người chém bị khựng lâu.

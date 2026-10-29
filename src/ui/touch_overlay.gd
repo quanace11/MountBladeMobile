@@ -1,6 +1,6 @@
 class_name TouchOverlay
 extends Control
-## Vẽ joystick, nút ĐỠ và nét vuốt. Chỉ đọc TouchController.
+## Vẽ joystick, nút CHÉM, nút ĐỠ và nét vuốt. Chỉ đọc TouchController.
 
 var touch: TouchController
 var _font: Font
@@ -34,11 +34,15 @@ func _draw() -> void:
 	if touch.uses_block_button():
 		var c := touch.block_button_center()
 		var held := touch.block_index != -1
-		draw_circle(c, cfg.block_button_radius, Color(0.2, 0.4, 0.9, 0.45 if held else 0.25))
-		draw_arc(c, cfg.block_button_radius, 0, TAU, 40, white, 2.0)
-		draw_string(_font, c + Vector2(-22, 8), "ĐỠ", HORIZONTAL_ALIGNMENT_CENTER, -1, 24, Color(1, 1, 1, 0.9))
+		_draw_button(c, cfg.block_button_radius, "ĐỠ", Color(0.2, 0.4, 0.9, 0.45 if held else 0.25))
 		if held:
 			_draw_dir_arrow(c, touch.block_button_dir, cfg.block_button_radius + 18, Color(0.5, 0.8, 1.0, 0.9))
+		var a := touch.attack_button_center()
+		var swinging := touch.combat_index != -1
+		_draw_button(a, cfg.attack_button_radius, "CHÉM", Color(0.85, 0.35, 0.15, 0.5 if swinging else 0.28))
+		if swinging:
+			_draw_dir_arrow(a, touch.combat.attack_dir, cfg.attack_button_radius + 18, Color(1.0, 0.75, 0.3, 0.9))
+		return
 
 	var pts := touch.combat.stroke()
 	if pts.size() == 3:
@@ -47,6 +51,12 @@ func _draw() -> void:
 		draw_circle(pts[0], 10, col)
 
 	draw_string(_font, Vector2(size.x * 0.62, size.y * 0.2), "Vùng chém: kéo để gồng, nhả để chém", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.25))
+
+
+func _draw_button(c: Vector2, radius: float, label: String, fill: Color) -> void:
+	draw_circle(c, radius, fill)
+	draw_arc(c, radius, 0, TAU, 40, Color(1, 1, 1, 0.35), 2.0)
+	draw_string(_font, c + Vector2(-radius, 8), label, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 24, Color(1, 1, 1, 0.9))
 
 
 func _draw_dir_arrow(center: Vector2, dir: int, dist: float, col: Color) -> void:

@@ -33,7 +33,7 @@ func _ready() -> void:
 	_row(box, "Đồ họa", ConfigDB.qualities, Game.quality_id, func(id):
 		Game.quality_id = id
 		Game.apply_fps_cap(), [&"low", &"medium", &"high"])
-	_row(box, "Cách đỡ", {&"0": "Nút ĐỠ", &"1": "Vuốt gấp khúc"}, StringName(str(Game.block_scheme)), func(id): Game.block_scheme = int(String(id)))
+	_row(box, "Cách đỡ", {&"0": "Nút CHÉM + ĐỠ", &"1": "Vuốt gấp khúc"}, StringName(str(Game.block_scheme)), func(id): Game.block_scheme = int(String(id)))
 
 	var fps := CheckButton.new()
 	fps.text = "Khóa 30 fps (tiết kiệm pin)"

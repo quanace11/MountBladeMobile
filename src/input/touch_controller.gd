@@ -1,7 +1,7 @@
 class_name TouchController
 extends Node
-## Nhận chạm đa điểm, chia ra: nửa trái là joystick di chuyển, nửa phải là vùng chiến đấu,
-## và nút ĐỠ (khi dùng kiểu nút). Kết quả đọc qua move_vector(), combat, block_dir.
+## Nhận chạm đa điểm, chia ra: nửa trái là joystick di chuyển.
+## Kiểu nút: bên phải có nút CHÉM và nút ĐỠ riêng. Kiểu vuốt gấp: cả nửa phải là vùng vuốt. Kết quả đọc qua move_vector(), combat, block_dir.
 
 var cfg: InputConfig
 var combat: GestureParser
@@ -31,6 +31,15 @@ func block_button_center() -> Vector2:
 	return cfg.block_button_center * size
 
 
+func attack_button_center() -> Vector2:
+	var size := get_viewport().get_visible_rect().size
+	return cfg.attack_button_center * size
+
+
+func _on_button(pos: Vector2, center: Vector2, radius: float) -> bool:
+	return pos.distance_to(center) <= radius * cfg.button_touch_slack
+
+
 func _input(event: InputEvent) -> void:
 	if cfg == null:
 		return
@@ -49,7 +58,7 @@ func _on_down(index: int, pos: Vector2) -> void:
 	var size := get_viewport().get_visible_rect().size
 	if pos.y < size.y * cfg.ignore_top_ratio:
 		return
-	if uses_block_button() and block_index == -1 and pos.distance_to(block_button_center()) <= cfg.block_button_radius:
+	if uses_block_button() and block_index == -1 and _on_button(pos, block_button_center(), cfg.block_button_radius):
 		block_index = index
 		block_touch_pos = pos
 		block_button_dir = Dir.UP
@@ -58,6 +67,8 @@ func _on_down(index: int, pos: Vector2) -> void:
 		joy_origin = pos
 		joy_pos = pos
 	elif combat_index == -1 and pos.x >= size.x * cfg.left_zone_ratio:
+		if uses_block_button() and not _on_button(pos, attack_button_center(), cfg.attack_button_radius):
+			return
 		combat_index = index
 		combat.touch_down(pos)
 

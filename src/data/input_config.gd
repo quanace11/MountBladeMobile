@@ -20,6 +20,13 @@ enum BlockScheme { BUTTON, CHEVRON }
 ## Nút ĐỠ: tâm theo tỉ lệ màn hình, bán kính px.
 @export var block_button_center: Vector2 = Vector2(0.62, 0.78)
 @export var block_button_radius: float = 80.0
+## Nút CHÉM (kiểu nút): giữ rồi kéo để gồng theo hướng kéo, nhả để chém. Tâm theo tỉ lệ màn hình, bán kính px.
+@export var attack_button_center: Vector2 = Vector2(0.86, 0.7)
+@export var attack_button_radius: float = 95.0
+## Vùng nhận chạm của nút lớn hơn hình vẽ một chút để ngón cái dễ trúng.
+@export var button_touch_slack: float = 1.25
+## Chạm nhanh nút CHÉM (không kéo) thì chém theo hướng này.
+@export_enum("none", "up", "thrust", "left", "right") var attack_tap_dir: int = 4
 ## Mũi tên báo hướng đòn của địch. Mặc định tắt: người chơi đọc hướng từ động tác gồng.
 @export var show_attack_hint: bool = false
 ## Phần trên cùng màn hình dành cho nút menu, không nhận điều khiển (0..1).

@@ -1,7 +1,8 @@
 class_name GestureParser
 extends RefCounted
-## Đọc một nét vuốt ở vùng chiến đấu (tay phải).
+## Đọc một nét vuốt ở vùng chiến đấu (tay phải), hoặc trên nút CHÉM khi dùng kiểu nút.
 ## - Kéo thẳng: gồng theo hướng kéo; nhả tay: chém.
+## - Kiểu BUTTON: chạm nhanh không kéo là chém theo hướng mặc định trong config.
 ## - Kiểu CHEVRON: nét có góc gấp (^ < > v) là đỡ; hướng đỡ là phía đỉnh góc; giữ tay là giữ đỡ.
 ## Hướng trả về là hướng theo màn hình, cũng là hướng theo nhân vật vì camera ở sau lưng.
 
@@ -66,6 +67,9 @@ func touch_up(_pos: Vector2) -> void:
 	if block_dir != Dir.NONE:
 		block_dir = Dir.NONE
 	elif attack_dir != Dir.NONE:
+		_release_pending = true
+	elif scheme == InputConfig.BlockScheme.BUTTON and cfg.attack_tap_dir != Dir.NONE:
+		attack_dir = cfg.attack_tap_dir
 		_release_pending = true
 
 
