@@ -38,7 +38,7 @@ func _ready() -> void:
 	for f in sim.state.fighters:
 		var v := FighterView.new()
 		add_child(v)
-		v.setup(f, ConfigDB.poses, f.id == player_id, cfg.player_model if f.id == player_id else null)
+		v.setup(f, ConfigDB.poses, f.id == player_id, Game.player_model() if f.id == player_id else null)
 		views[f.id] = v
 		_prev_pos[f.id] = f.pos
 		_prev_yaw[f.id] = f.yaw
@@ -108,7 +108,6 @@ func apply_controls() -> void:
 	touch.combat.scheme = p.block_scheme
 	player_src.free_aim = p.free_aim
 	player_src.aim_assist = p.aim_assist
-	player_src.auto_block = p.auto_block
 
 
 func _process(delta: float) -> void:

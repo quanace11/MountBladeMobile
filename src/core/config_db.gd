@@ -13,6 +13,7 @@ var characters: Dictionary = {}
 var bots: Dictionary = {}
 var matches: Dictionary = {}
 var qualities: Dictionary = {}
+var models: Dictionary = {}
 
 
 func _ready() -> void:
@@ -30,6 +31,7 @@ func reload() -> void:
 	bots = _load_dir("ai")
 	matches = _load_dir("matches")
 	qualities = _load_dir("quality")
+	models = _load_dir("models")
 
 
 ## Nạp mọi .tres trong một thư mục, khóa theo tên file (không đuôi).

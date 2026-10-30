@@ -8,6 +8,8 @@ const MATCH_SCENE := "res://scenes/match.tscn"
 var match_id: StringName = &"1v1"
 var bot_id: StringName = &"easy"
 var player_character_id: StringName = &"dao_tuong"
+## Nhân vật (model 3D) của người chơi, theo tên file trong config/models.
+var player_model_id: StringName = &"tuongtrang"
 var quality_id: StringName = &"medium"
 var fps_cap_30: bool = false
 ## Chế độ điều khiển (ControlPrefs.Mode) và bộ tự chỉnh dùng khi chọn CUSTOM.
@@ -38,6 +40,11 @@ func player_character() -> CharacterDef:
 	return c if c else current_match().player_character
 
 
+func player_model() -> CharacterModel:
+	var m: CharacterModel = ConfigDB.models.get(player_model_id)
+	return m if m else ConfigDB.game.player_model
+
+
 ## Cách điều khiển đang dùng theo chế độ đã chọn.
 func controls() -> ControlPrefs:
 	return custom_controls if control_mode == ControlPrefs.Mode.CUSTOM else ControlPrefs.preset(control_mode)
@@ -62,6 +69,7 @@ func save_settings() -> void:
 	cfg.set_value("game", "match", match_id)
 	cfg.set_value("game", "bot", bot_id)
 	cfg.set_value("game", "character", player_character_id)
+	cfg.set_value("game", "model", player_model_id)
 	cfg.set_value("game", "quality", quality_id)
 	cfg.set_value("game", "fps30", fps_cap_30)
 	cfg.set_value("game", "control_mode", control_mode)
@@ -76,6 +84,7 @@ func _load_settings() -> void:
 	match_id = cfg.get_value("game", "match", match_id)
 	bot_id = cfg.get_value("game", "bot", bot_id)
 	player_character_id = cfg.get_value("game", "character", player_character_id)
+	player_model_id = cfg.get_value("game", "model", player_model_id)
 	quality_id = cfg.get_value("game", "quality", quality_id)
 	fps_cap_30 = cfg.get_value("game", "fps30", fps_cap_30)
 	control_mode = cfg.get_value("game", "control_mode", control_mode)

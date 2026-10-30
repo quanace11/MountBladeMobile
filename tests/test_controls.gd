@@ -44,3 +44,11 @@ func test_aim_assist_snaps_to_enemy_near_crosshair() -> void:
 	check(absf(c.face_yaw) < 0.01, "trợ ngắm quay về địch (yaw %.2f)" % c.face_yaw)
 	r = _face_yaw_with_assist(false)
 	check(is_equal_approx((r[0] as FighterCommand).face_yaw, r[1]), "tắt trợ ngắm thì giữ hướng camera")
+
+
+func test_two_player_models_to_pick() -> void:
+	var models: Dictionary = ConfigDB._load_dir("models")
+	for id in [&"tuong", &"tuongtrang"]:
+		check(models.has(id), "có nhân vật %s" % id)
+		var m: CharacterModel = models[id]
+		check(m.scene != null and m.display_name != "" and m.portrait != null, "%s có model, tên và ảnh" % id)
