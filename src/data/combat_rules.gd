@@ -25,5 +25,15 @@ extends Resource
 @export var turn_mult_attack: float = 0.5
 ## Được hủy gồng để chuyển sang đỡ (như Mount & Blade).
 @export var allow_windup_cancel_to_block: bool = true
+## Nhả nút chém khi đang chém hoặc đang thu vũ khí thì luôn nhớ lệnh và chém ngay khi rảnh.
+## Đang khựng, đang lăn thì chỉ nhớ nếu còn ít hơn khoảng này (giây) là rảnh.
+@export var attack_buffer_time: float = 0.35
+## Lăn né: thời gian lăn, quãng đường, thời gian miễn trúng tính từ lúc bắt đầu lăn,
+## thể lực mất, thời gian đứng dậy sau khi lăn (giây, mét).
+@export var dodge_time: float = 0.4
+@export var dodge_distance: float = 2.6
+@export var dodge_iframes: float = 0.28
+@export var dodge_stamina_cost: float = 20.0
+@export var dodge_recovery: float = 0.15
 ## Thể lực bắt đầu hồi sau khi dùng (giây).
 @export var stamina_regen_delay: float = 0.8

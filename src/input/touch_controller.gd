@@ -1,6 +1,7 @@
 class_name TouchController
 extends Node
 ## Nhận chạm đa điểm. Nửa trái là joystick di chuyển. Nửa phải:
+## Nút LĂN phía trên nút CHÉM.
 ## - Kiểu nút (mặc định): nút CHÉM và nút ĐỠ sát góc phải dưới, giữ và kéo để chọn hướng;
 ##   khi tự ngắm thì mọi chỗ trống còn lại là vùng kéo để xoay người.
 ## - Kiểu vuốt: vùng vuốt chém (GestureParser), nút ĐỠ hoặc vuốt gấp khúc;
@@ -26,6 +27,12 @@ var attack_index: int = -1
 var attack_button_dir: int = Dir.NONE
 var attack_touch_pos := Vector2.ZERO
 var _attack_release_dir: int = Dir.NONE
+var _attack_down_ms: int = 0
+## Giữ nút CHÉM mà chưa kéo quá khoảng này (ms) thì mới gồng bổ. Kéo ngay thì gồng thẳng
+## theo hướng kéo, không phải gồng bổ rồi gồng lại từ đầu.
+const ATTACK_DEFAULT_DELAY_MS := 150
+var dodge_index: int = -1
+var _dodge_pending := false
 ## Hệ số cỡ nút, hệ số độ nhạy xoay (từ cài đặt người chơi).
 var button_scale := 1.0
 var look_mult := 1.0
@@ -62,6 +69,14 @@ func attack_button_radius() -> float:
 	return cfg.attack_button_radius * button_scale
 
 
+func dodge_button_center() -> Vector2:
+	return cfg.dodge_button_center * get_viewport().get_visible_rect().size
+
+
+func dodge_button_radius() -> float:
+	return cfg.dodge_button_radius * button_scale
+
+
 func _input(event: InputEvent) -> void:
 	if cfg == null:
 		return
@@ -81,11 +96,14 @@ func _on_down(index: int, pos: Vector2) -> void:
 	if pos.y < size.y * cfg.ignore_top_ratio:
 		return
 	var right_side := pos.x >= size.x * cfg.left_zone_ratio
-	if attack_button and attack_index == -1 and pos.distance_to(attack_button_center()) <= attack_button_radius():
+	if dodge_index == -1 and pos.distance_to(dodge_button_center()) <= dodge_button_radius():
+		dodge_index = index
+		_dodge_pending = true
+	elif attack_button and attack_index == -1 and pos.distance_to(attack_button_center()) <= attack_button_radius():
 		attack_index = index
 		attack_touch_pos = pos
-		# Bấm là gồng bổ ngay; kéo đi hướng khác thì đổi hướng.
-		attack_button_dir = Dir.UP
+		attack_button_dir = Dir.NONE
+		_attack_down_ms = Time.get_ticks_msec()
 	elif uses_block_button() and block_index == -1 and pos.distance_to(block_button_center()) <= block_button_radius():
 		block_index = index
 		block_touch_pos = pos
@@ -131,9 +149,12 @@ func _on_up(index: int, pos: Vector2) -> void:
 	elif index == combat_index:
 		combat_index = -1
 		combat.touch_up(pos)
+	elif index == dodge_index:
+		dodge_index = -1
 	elif index == attack_index:
 		attack_index = -1
-		_attack_release_dir = attack_button_dir
+		# Bấm rồi nhả không kéo là bổ.
+		_attack_release_dir = attack_button_dir if attack_button_dir != Dir.NONE else Dir.UP
 		attack_button_dir = Dir.NONE
 	elif index == block_index:
 		block_index = -1
@@ -149,6 +170,13 @@ func consume_look() -> float:
 	return a
 
 
+## true một lần sau khi bấm nút LĂN.
+func consume_dodge() -> bool:
+	var d := _dodge_pending
+	_dodge_pending = false
+	return d
+
+
 ## Vector joystick theo màn hình, x sang phải, y xuống dưới, độ dài 0..1.
 func move_vector() -> Vector2:
 	if joy_index == -1:
@@ -162,6 +190,8 @@ func move_vector() -> Vector2:
 func attack_dir() -> int:
 	if attack_button_dir != Dir.NONE:
 		return attack_button_dir
+	if attack_index != -1 and Time.get_ticks_msec() - _attack_down_ms >= ATTACK_DEFAULT_DELAY_MS:
+		return Dir.UP
 	return combat.attack_dir
 
 

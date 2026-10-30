@@ -2,7 +2,7 @@ class_name FighterState
 extends RefCounted
 ## Trạng thái một tướng trong sim. Chỉ là dữ liệu, không có Node.
 
-enum State { IDLE, WINDUP, RELEASE, RECOVERY, BLOCK, STAGGER, DEAD }
+enum State { IDLE, WINDUP, RELEASE, RECOVERY, BLOCK, STAGGER, DEAD, DODGE }
 
 var id: int = 0
 var team: int = 0
@@ -22,6 +22,11 @@ var attack_dir: int = Dir.NONE
 var release_queued: bool = false
 var block_dir: int = Dir.NONE
 var block_started_tick: int = -1000
+## Lệnh chém nhả lúc đang bận, chờ chém khi rảnh (NONE = không có) và tick hết hạn.
+var buffered_attack_dir: int = Dir.NONE
+var buffered_until: int = -1
+## Hướng lăn né (độ dài 1) khi ở trạng thái DODGE.
+var dodge_dir: Vector2 = Vector2.ZERO
 ## Đang khựng vì đòn mình bị đỡ (vũ khí bị dội lại), khác với khựng vì bị trúng đòn.
 var recoil: bool = false
 ## Tick còn lại trước khi thể lực bắt đầu hồi.
@@ -60,6 +65,7 @@ func to_dict() -> Dictionary:
 		"state": state, "sticks": state_ticks, "sdur": state_duration,
 		"adir": attack_dir, "rq": release_queued, "bdir": block_dir,
 		"bstart": block_started_tick, "swait": stamina_wait, "rc": recoil,
+		"bad": buffered_attack_dir, "bu": buffered_until, "dd": [dodge_dir.x, dodge_dir.y],
 		"vel": [velocity.x, velocity.y],
 	}
 
@@ -83,5 +89,9 @@ static func from_dict(d: Dictionary) -> FighterState:
 	f.block_started_tick = int(d["bstart"])
 	f.stamina_wait = int(d["swait"])
 	f.recoil = bool(d.get("rc", false))
+	f.buffered_attack_dir = int(d.get("bad", Dir.NONE))
+	f.buffered_until = int(d.get("bu", -1))
+	var dd: Array = d.get("dd", [0.0, 0.0])
+	f.dodge_dir = Vector2(dd[0], dd[1])
 	f.velocity = Vector2(d["vel"][0], d["vel"][1])
 	return f

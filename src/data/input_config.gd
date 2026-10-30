@@ -24,6 +24,9 @@ enum BlockScheme { BUTTON, CHEVRON }
 ## Đặt cách mép đủ xa để còn chỗ kéo về mọi hướng.
 @export var attack_button_center: Vector2 = Vector2(0.885, 0.74)
 @export var attack_button_radius: float = 85.0
+## Nút LĂN (phía trên nút CHÉM): bấm để lăn né theo hướng joystick, không đi thì lăn lùi.
+@export var dodge_button_center: Vector2 = Vector2(0.9, 0.42)
+@export var dodge_button_radius: float = 52.0
 ## Mũi tên báo hướng đòn của địch. Mặc định tắt: người chơi đọc hướng từ động tác gồng.
 @export var show_attack_hint: bool = false
 ## Tự ngắm với kiểu chém bằng vuốt: nửa phải, phần phía trên tỉ lệ này (0..1) là vùng kéo

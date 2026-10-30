@@ -23,12 +23,15 @@ static func angle_to(f: FighterState, point: Vector2) -> float:
 
 
 ## Địch đầu tiên (gần nhất) nằm trong tầm và cung chém. Không có thì trả về null.
-static func find_target(attacker: FighterState, fighters: Array[FighterState]) -> FighterState:
+## Có ctx thì bỏ qua địch đang lăn trong lúc miễn trúng.
+static func find_target(attacker: FighterState, fighters: Array[FighterState], ctx: SimContext = null) -> FighterState:
 	var w := attacker.def.weapon
 	var best: FighterState = null
 	var best_dist := INF
 	for t in fighters:
 		if t == attacker or not t.is_alive() or t.team == attacker.team:
+			continue
+		if ctx and FighterSim.is_invulnerable(t, ctx):
 			continue
 		var dist := attacker.pos.distance_to(t.pos)
 		if dist > w.reach + t.def.body_radius:
@@ -44,7 +47,7 @@ static func find_target(attacker: FighterState, fighters: Array[FighterState]) -
 static func resolve_impact(attacker: FighterState, fighters: Array[FighterState], ctx: SimContext, tick: int, events: Array) -> void:
 	var rules := ctx.rules
 	var w := attacker.def.weapon
-	var target := find_target(attacker, fighters)
+	var target := find_target(attacker, fighters, ctx)
 	if target == null:
 		events.append({"type": &"miss", "id": attacker.id, "dir": attacker.attack_dir})
 		attacker.set_state(S.RECOVERY, ctx.ticks(w.recovery_time))

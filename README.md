@@ -11,7 +11,7 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 1. Mở Godot 4.6, chọn *Import* và trỏ tới thư mục này.
 2. Bấm Play. Trên PC dùng chuột như ngón tay, hoặc bàn phím:
-   - `WASD`: đi. `Q` / `E`: xoay người (hoặc kéo chuột ở nửa trên bên phải màn hình).
+   - `WASD`: đi. `Space`: lăn né. `Q` / `E`: xoay người (hoặc kéo chuột ở nửa trên bên phải màn hình).
    - Giữ `I` / `J` / `K` / `L`: gồng bổ trên / trái / đâm / phải; nhả phím để chém.
    - Giữ phím mũi tên: đỡ theo hướng đó.
 
@@ -27,7 +27,11 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
      trợ ngắm (đang chém thì tự quay nhẹ về địch gần tâm), độ nhạy xoay, khoảng cách camera, cỡ nút.
 - **Tay phải**: nút **CHÉM** sát góc phải dưới: giữ và kéo về hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó),
   nhả tay để chém; bấm không kéo là bổ. Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
+  Nhả nút khi đang chém dở hoặc đang thu vũ khí thì game nhớ lệnh và chém tiếp ngay khi rảnh (chém liên hoàn).
+  Không đủ thể lực thì không chém được và thanh thể lực nháy đỏ.
 - Nút **ĐỠ** bên trái nút CHÉM: giữ và kéo về phía đòn đang đến.
+- Nút **LĂN** phía trên nút CHÉM: lộn một vòng theo hướng đang đẩy joystick (không đẩy thì lăn lùi), khoảng 2,6 m.
+  Đầu cú lăn không bị chém trúng; tốn thể lực. Dùng để thoát vòng vây khi đánh 1 vs nhiều.
   Kiểu vuốt cả vùng (trong *Tự chỉnh*) đỡ bằng nút ĐỠ hoặc nét gấp khúc `^` `<` `>` `v`, giữ ngón tay là giữ thế đỡ.
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
   (A chém từ bên phải của A thì B phải đỡ bên trái của B).

@@ -40,6 +40,7 @@ func _exit_tree() -> void:
 func _on_event(e: Dictionary) -> void:
 	match e["type"]:
 		&"attack_released": _play(_swing, -6.0)
+		&"dodge": _play(_swing, -4.0, 0.6)
 		&"blocked": _play(_block)
 		&"parried": _play(_parry, 2.0)
 		&"guard_broken": _play(_guard_break, 2.0)
