@@ -46,9 +46,18 @@ var _left_hand_target := Vector3.ZERO
 
 var _flash := 0.0
 var _jolt := 0.0
-## Góc vũ khí hiện tại (độ, Euler). Nội suy theo góc chứ không theo quaternion để vũ khí
-## luôn đi vòng phía trước người, không quét ra sau lưng khi đổi hướng.
-var _hand_rot := Vector3.ZERO
+## Hướng cán (từ tay về phía lưỡi) và hướng lưỡi sắc, theo thân. Nội suy theo hướng chứ không theo góc
+## Euler để vũ khí đi đúng đường vung.
+var _shaft := Vector3.UP
+var _edge := Vector3.LEFT
+## Đang vung đòn: tiến độ 0..1 và tư thế lúc bắt đầu vung.
+var _swing_t := 1.0
+var _swing_from_pos := Vector3.ZERO
+var _swing_from_shaft := Vector3.UP
+var _swing_from_edge := Vector3.LEFT
+var _swing_state := -1
+## Tay trái nắm cán ở đâu (mét dọc cán tính từ tay phải, âm = phía đốc).
+var _grip_t := -0.35
 var _body_scale := Vector3.ONE
 var _rig: SkinnedRig
 var _model_mesh: MeshInstance3D
@@ -89,7 +98,8 @@ func setup(p_state: FighterState, p_poses: PoseSet, p_is_player: bool, model: Ch
 	var p: Array = poses.get_pose("idle")
 	_hand.position = p[0]
 	_hand.rotation_degrees = p[1]
-	_hand_rot = p[1]
+	_shaft = _hand.basis.y
+	_edge = _hand.basis.x
 	_left_hand_target = poses.shield_idle_pos
 
 
@@ -380,7 +390,8 @@ func _build_weapon(w: WeaponDef, metal: Material, gold: Material, red: Material)
 	var root := Node3D.new()
 	var shaft := Mats.color(w.shaft_color, 0.7)
 	var blade := Mats.color(w.blade_color, 0.28, 0.95)
-	var below := w.shaft_length * 0.25
+	# Vũ khí cán dài cầm gần giữa cán để tay trái nắm được cả phía đốc.
+	var below := w.shaft_length * (0.25 if w.has_shield or w.shaft_length < 0.5 else 0.42)
 	var above := w.shaft_length - below
 	_mi(cyl(0.02, 0.022, w.shaft_length, 8), shaft, root, Vector3(0, (above - below) * 0.5, 0))
 	if w.has_shield or w.shaft_length < 0.5:
@@ -538,13 +549,64 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 	var target: Array = poses.get_pose(pose)
 	if cur.state == S.BLOCK and _jolt > 0.0:
 		target = [target[0] + Vector3(0.0, -0.05, 0.14) * _jolt, target[1]]
-	var k := 1.0 - exp(-speed * delta)
-	_hand.position = _hand.position.lerp(target[0], k)
-	_hand_rot = _hand_rot.lerp(target[1], k)
-	_hand.rotation_degrees = _hand_rot
+	var tb := Basis.from_euler(target[1] * (PI / 180.0))
+	if cur.state == S.RELEASE:
+		_update_swing(cur, target[0], tb, delta)
+	else:
+		var k := 1.0 - exp(-speed * delta)
+		_hand.position = _hand.position.lerp(target[0], k)
+		_shaft = _turn_toward(_shaft, tb.y, k)
+		_edge = _turn_toward(_edge, tb.x, k)
+	_swing_state = cur.state
+	_apply_hand_basis()
 
 	var shield_target := poses.shield_block_pos if cur.state == S.BLOCK else poses.shield_idle_pos
 	_left_hand_target = _left_hand_target.lerp(shield_target, 1.0 - exp(-poses.blend_speed * 1.6 * delta))
+
+
+## Đường vung của từng hướng chém: lưỡi đi qua hướng này ở giữa đường (theo thân).
+## Chém ngang thì quét vòng phía trước qua bên sườn, bổ thì vung qua đỉnh đầu, đâm thì đi thẳng.
+static func _swing_via(dir: int) -> Vector3:
+	match dir:
+		Dir.UP: return Vector3(-0.05, 1.0, -0.15).normalized()
+		Dir.RIGHT: return Vector3(1.0, 0.3, -0.25).normalized()
+		Dir.LEFT: return Vector3(-1.0, 0.3, -0.25).normalized()
+	return Vector3.ZERO
+
+
+## Vung đòn: đi theo đường cố định từ tư thế gồng tới tư thế chém, nhanh dần, hết đường đúng lúc chạm.
+func _update_swing(cur: FighterState, strike_pos: Vector3, strike: Basis, delta: float) -> void:
+	if _swing_state != S.RELEASE:
+		_swing_t = 0.0
+		_swing_from_pos = _hand.position
+		_swing_from_shaft = _shaft
+		_swing_from_edge = _edge
+	_swing_t = minf(1.0, _swing_t + delta / maxf(0.05, def.weapon.release_time))
+	var e := _swing_t * _swing_t * (3.0 - 2.0 * _swing_t)
+	var via := _swing_via(cur.attack_dir)
+	if via == Vector3.ZERO:
+		_shaft = _swing_from_shaft.slerp(strike.y, e)
+	elif e < 0.5:
+		_shaft = _swing_from_shaft.slerp(via, e * 2.0)
+	else:
+		_shaft = via.slerp(strike.y, e * 2.0 - 1.0)
+	_edge = _swing_from_edge.slerp(strike.x, e)
+	_hand.position = _swing_from_pos.lerp(strike_pos, e)
+
+
+## Xoay hướng a về b một phần k; nếu đường ngắn nhất đi qua sau lưng thì vòng ra phía trước.
+static func _turn_toward(a: Vector3, b: Vector3, k: float) -> Vector3:
+	var mid := a + b
+	if mid.length() < 0.2 or (mid.normalized().z > 0.35 and a.dot(b) < 0.0):
+		b = (mid * 0.5 + Vector3(0, 0.3, -1.0)).normalized()
+	return a.slerp(b, k).normalized()
+
+
+func _apply_hand_basis() -> void:
+	var y := _shaft.normalized()
+	var x := (_edge - y * _edge.dot(y))
+	x = x.normalized() if x.length() > 0.01 else y.cross(Vector3.BACK).normalized()
+	_hand.basis = Basis(x, y, x.cross(y))
 
 
 ## Lăn né: cả người lộn một vòng quanh hông theo hướng lăn.
@@ -692,9 +754,15 @@ func _update_limbs() -> void:
 	var l_sh := chest * Vector3(-SHOULDER.x, SHOULDER.y, SHOULDER.z)
 	var l_target := _left_hand_target
 	if _shield == null:
-		var grip := _hand.transform * Vector3(0, -poses.two_hand_grip, 0)
-		var limit := (UPPER_ARM + FOREARM) * 1.05
-		l_target = grip if l_sh.distance_to(grip) <= limit else l_sh + (grip - l_sh).normalized() * limit * 0.9
+		# Tay trái nắm chỗ cán gần vai trái nhất (không sát tay phải), trượt dần dọc cán khi đổi thế.
+		var y := _hand.basis.y.normalized()
+		var t := clampf((l_sh - _hand.position).dot(y), -poses.two_hand_grip, poses.two_hand_grip)
+		if absf(t) < poses.two_hand_grip_min:
+			t = poses.two_hand_grip_min * (1.0 if t >= 0.0 else -1.0)
+		_grip_t = lerpf(_grip_t, t, 0.35)
+		if absf(_grip_t) < poses.two_hand_grip_min * 0.5:
+			_grip_t = t
+		l_target = _hand.position + y * _grip_t
 	var l_hand := _arm(-1, l_sh, l_target, Vector3(-0.4, -0.6, 0.5))
 	if _shield:
 		_shield.position = l_hand + Vector3(0.02, 0.0, -0.06)
