@@ -63,12 +63,12 @@ func _ready() -> void:
 
 	touch = TouchController.new()
 	add_child(touch)
-	touch.setup(ConfigDB.input, Game.block_scheme)
+	touch.setup(ConfigDB.input, InputConfig.BlockScheme.BUTTON)
 
 	player_src = PlayerCommandSource.new(touch, func() -> float: return camera_rig.yaw)
 	player_src.fighter_id = player_id
 	sources.append(player_src)
-	set_free_aim(Game.free_aim)
+	apply_controls()
 
 	var tokens := AttackTokenManager.new(cfg.max_attackers_at_once)
 	var seed_base := cfg.rng_seed if cfg.rng_seed != 0 else int(Time.get_unix_time_from_system())
@@ -94,11 +94,18 @@ func _exit_tree() -> void:
 		EventBus.sim_event.disconnect(_on_event)
 
 
-## Bật/tắt tự ngắm: kéo để xoay người, hoặc tự quay về địch gần nhất.
-func set_free_aim(on: bool) -> void:
-	camera_rig.free_look = on
-	touch.free_look = on
-	player_src.free_aim = on
+## Áp cách điều khiển đang chọn (Game.controls()) cho camera, cảm ứng và lệnh người chơi.
+func apply_controls() -> void:
+	var p := Game.controls()
+	camera_rig.free_look = p.free_aim
+	camera_rig.distance = p.camera_distance
+	touch.free_look = p.free_aim
+	touch.attack_button = p.attack_button
+	touch.button_scale = p.button_scale
+	touch.look_mult = p.look_sensitivity
+	touch.combat.scheme = p.block_scheme
+	player_src.free_aim = p.free_aim
+	player_src.aim_assist = p.aim_assist
 
 
 func _process(delta: float) -> void:

@@ -9,14 +9,14 @@ var match_id: StringName = &"1v1"
 var bot_id: StringName = &"easy"
 var player_character_id: StringName = &"dao_tuong"
 var quality_id: StringName = &"medium"
-var block_scheme: int = InputConfig.BlockScheme.BUTTON
 var fps_cap_30: bool = false
-## true: người chơi tự xoay người bằng cách kéo (kiểu Bannerlord). false: tự quay về địch gần nhất.
-var free_aim: bool = true
+## Chế độ điều khiển (ControlPrefs.Mode) và bộ tự chỉnh dùng khi chọn CUSTOM.
+var control_mode: int = ControlPrefs.Mode.FREE
+var custom_controls := ControlPrefs.new()
 
 
 func _ready() -> void:
-	block_scheme = ConfigDB.input.block_scheme
+	custom_controls.block_scheme = ConfigDB.input.block_scheme
 	_load_settings()
 	apply_fps_cap()
 
@@ -36,6 +36,11 @@ func current_quality() -> QualityPreset:
 func player_character() -> CharacterDef:
 	var c: CharacterDef = ConfigDB.characters.get(player_character_id)
 	return c if c else current_match().player_character
+
+
+## Cách điều khiển đang dùng theo chế độ đã chọn.
+func controls() -> ControlPrefs:
+	return custom_controls if control_mode == ControlPrefs.Mode.CUSTOM else ControlPrefs.preset(control_mode)
 
 
 func apply_fps_cap() -> void:
@@ -58,9 +63,9 @@ func save_settings() -> void:
 	cfg.set_value("game", "bot", bot_id)
 	cfg.set_value("game", "character", player_character_id)
 	cfg.set_value("game", "quality", quality_id)
-	cfg.set_value("game", "block_scheme", block_scheme)
 	cfg.set_value("game", "fps30", fps_cap_30)
-	cfg.set_value("game", "free_aim", free_aim)
+	cfg.set_value("game", "control_mode", control_mode)
+	custom_controls.save(cfg, "custom_controls")
 	cfg.save(SETTINGS_PATH)
 
 
@@ -72,6 +77,6 @@ func _load_settings() -> void:
 	bot_id = cfg.get_value("game", "bot", bot_id)
 	player_character_id = cfg.get_value("game", "character", player_character_id)
 	quality_id = cfg.get_value("game", "quality", quality_id)
-	block_scheme = cfg.get_value("game", "block_scheme", block_scheme)
 	fps_cap_30 = cfg.get_value("game", "fps30", fps_cap_30)
-	free_aim = cfg.get_value("game", "free_aim", free_aim)
+	control_mode = cfg.get_value("game", "control_mode", control_mode)
+	custom_controls.load_from(cfg, "custom_controls")

@@ -11,6 +11,8 @@ var obstacles: Array = []
 var camera: Camera3D
 var yaw: float = 0.0
 var free_look := true
+## Khoảng lùi sau lưng (mét). Mặc định lấy từ GameConfig, người chơi chỉnh được.
+var distance := 4.0
 
 var _shake := 0.0
 var _dist := 0.0
@@ -27,7 +29,8 @@ func setup(p_config: GameConfig, p_target: FighterView) -> void:
 	add_child(camera)
 	camera.make_current()
 	yaw = target.rotation.y
-	_dist = config.camera_distance
+	distance = config.camera_distance
+	_dist = distance
 	_place(1.0)
 
 
@@ -66,14 +69,14 @@ func _place(k: float) -> void:
 
 ## Khoảng lùi camera lớn nhất mà không có tướng nào đứng chắn giữa camera và người chơi.
 func _clear_distance(base: Vector3, fwd: Vector3) -> float:
-	var best := config.camera_distance
+	var best := distance
 	for o in obstacles:
 		var n := o as Node3D
 		if n == null or n == target:
 			continue
 		var rel := n.global_position - base
 		var behind := -rel.dot(fwd)
-		if behind <= 0.2 or behind > config.camera_distance + 0.6:
+		if behind <= 0.2 or behind > distance + 0.6:
 			continue
 		var side := (rel + fwd * behind).length()
 		if side < 0.9:

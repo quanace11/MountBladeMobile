@@ -18,12 +18,16 @@ enum BlockScheme { BUTTON, CHEVRON }
 ## Nét gấp: đoạn sau góc rẽ tối thiểu bao nhiêu px.
 @export var chevron_min_second_leg: float = 30.0
 ## Nút ĐỠ: tâm theo tỉ lệ màn hình, bán kính px.
-@export var block_button_center: Vector2 = Vector2(0.62, 0.78)
-@export var block_button_radius: float = 80.0
+@export var block_button_center: Vector2 = Vector2(0.69, 0.83)
+@export var block_button_radius: float = 75.0
+## Nút CHÉM (sát góc phải dưới): giữ và kéo về hướng muốn chém, nhả để chém. Bấm không kéo là bổ.
+## Đặt cách mép đủ xa để còn chỗ kéo về mọi hướng.
+@export var attack_button_center: Vector2 = Vector2(0.885, 0.74)
+@export var attack_button_radius: float = 85.0
 ## Mũi tên báo hướng đòn của địch. Mặc định tắt: người chơi đọc hướng từ động tác gồng.
 @export var show_attack_hint: bool = false
-## Tự ngắm: nửa phải, phần phía trên tỉ lệ này (0..1) là vùng kéo để xoay người/camera;
-## phần dưới là vùng vuốt chém.
+## Tự ngắm với kiểu chém bằng vuốt: nửa phải, phần phía trên tỉ lệ này (0..1) là vùng kéo
+## để xoay người/camera; phần dưới là vùng vuốt chém. Kiểu nút CHÉM: mọi chỗ trống bên phải đều kéo xoay được.
 @export var look_zone_bottom_ratio: float = 0.5
 ## Độ nhạy xoay: độ quay được cho mỗi px kéo ngang (theo độ phân giải thiết kế 1280x720).
 @export var look_sensitivity_deg: float = 0.3

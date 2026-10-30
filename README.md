@@ -19,15 +19,16 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 - **Tay trái**: joystick di chuyển, theo hướng camera.
   Di chuyển có quán tính, đi ngang và đi lùi chậm hơn đi thẳng, xoay người chậm lại khi đang chém (chỉnh trong `config/characters/`).
-- **Hướng mặt** (chọn trong menu hoặc nút *Ngắm* trên góc phải khi đang đánh):
-  - *Tự xoay* (mặc định, như Bannerlord): kéo ngang ở **nửa trên bên phải** màn hình để xoay camera, nhân vật quay theo
-    hướng camera với tốc độ xoay có giới hạn. Chém trúng ai là do bạn quay mặt về đâu, nên đi vòng, né sườn, chém lệch đều có tác dụng.
-  - *Khoá địch gần*: nhân vật tự quay mặt về địch gần nhất như bản cũ. Bot luôn dùng kiểu này.
-- **Tay phải**, nửa dưới: đặt ngón tay, kéo theo hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó), nhả tay để chém.
-  Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
-- **Đỡ**, chọn trong menu hoặc nút trên góc phải khi đang đánh:
-  - *Nút ĐỠ*: giữ nút và kéo về phía đòn đang đến.
-  - *Vuốt gấp khúc*: một nét có góc gấp `^` đỡ trên, `<` đỡ trái, `>` đỡ phải, `v` đỡ đâm. Giữ ngón tay là giữ thế đỡ.
+- **Điều khiển**, chọn trong menu hoặc nút trên cùng khi đang đánh:
+  1. *Tự xoay* (mặc định, như Bannerlord): kéo ngang chỗ trống bên phải màn hình để xoay camera, nhân vật quay theo
+     hướng camera với tốc độ xoay có giới hạn. Chấm giữa màn hình là chỗ đang nhìn, chuyển đỏ khi có địch trong tầm chém.
+  2. *Khoá địch gần*: nhân vật tự quay mặt về địch gần nhất, camera bám sau lưng. Bot luôn dùng kiểu này.
+  3. *Tự chỉnh*: chọn hướng mặt, kiểu chém (nút CHÉM hoặc vuốt cả vùng như bản cũ), cách đỡ khi vuốt,
+     trợ ngắm (đang chém thì tự quay nhẹ về địch gần tâm), độ nhạy xoay, khoảng cách camera, cỡ nút.
+- **Tay phải**: nút **CHÉM** sát góc phải dưới: giữ và kéo về hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó),
+  nhả tay để chém; bấm không kéo là bổ. Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
+- Nút **ĐỠ** bên trái nút CHÉM: giữ và kéo về phía đòn đang đến.
+  Kiểu vuốt cả vùng (trong *Tự chỉnh*) đỡ bằng nút ĐỠ hoặc nét gấp khúc `^` `<` `>` `v`, giữ ngón tay là giữ thế đỡ.
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
   (A chém từ bên phải của A thì B phải đỡ bên trái của B).
 - Giơ đỡ đúng hướng sát lúc đòn tới là **đỡ hoàn hảo**: người chém bị khựng lâu.

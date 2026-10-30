@@ -1,5 +1,7 @@
 extends Control
-## Menu chính: chọn trận, tướng, độ khó, kiểu đỡ, đồ họa.
+## Menu chính: chọn trận, tướng, độ khó, cách điều khiển, đồ họa.
+
+var _custom_box: VBoxContainer
 
 
 func _ready() -> void:
@@ -33,9 +35,13 @@ func _ready() -> void:
 	_row(box, "Đồ họa", ConfigDB.qualities, Game.quality_id, func(id):
 		Game.quality_id = id
 		Game.apply_fps_cap(), [&"low", &"medium", &"high"])
-	_row(box, "Cách đỡ", {&"0": "Nút ĐỠ", &"1": "Vuốt gấp khúc"}, StringName(str(Game.block_scheme)), func(id): Game.block_scheme = int(String(id)))
-
-	_row(box, "Hướng mặt", {&"1": "Tự xoay (kéo)", &"0": "Khoá địch gần"}, &"1" if Game.free_aim else &"0", func(id): Game.free_aim = id == &"1", [&"1", &"0"])
+	var modes := {}
+	for m in ControlPrefs.Mode.values():
+		modes[StringName(str(m))] = ControlPrefs.mode_name(m)
+	_row(box, "Điều khiển", modes, StringName(str(Game.control_mode)), func(id):
+		Game.control_mode = int(String(id))
+		_custom_box.visible = Game.control_mode == ControlPrefs.Mode.CUSTOM, modes.keys())
+	_build_custom(box)
 
 	var fps := CheckButton.new()
 	fps.text = "Khóa 30 fps (tiết kiệm pin)"
@@ -54,11 +60,57 @@ func _ready() -> void:
 	box.add_child(start)
 
 	var help := Label.new()
-	help.text = "Tay trái: joystick di chuyển. Tay phải, nửa dưới: kéo để gồng, nhả để chém (lên = bổ, xuống = đâm, trái/phải = chém ngang). Tay phải, nửa trên: kéo ngang để xoay người.\nĐỡ: giữ nút ĐỠ và kéo về phía đòn đến, hoặc vuốt nét gấp ^ < > v.\nPC: WASD đi, Q/E xoay người, giữ I/J/K/L để gồng rồi nhả để chém, giữ phím mũi tên để đỡ."
+	help.text = "Tay trái: joystick di chuyển. Tay phải: giữ nút CHÉM và kéo về hướng muốn chém (lên = bổ, xuống = đâm, trái/phải = chém ngang), nhả để chém. Giữ nút ĐỠ và kéo về phía đòn đến. Tự xoay: kéo ngang chỗ trống bên phải để xoay người, chấm giữa màn hình là chỗ đang nhìn (đỏ = địch trong tầm chém).\nKhoá địch gần: tự quay về địch gần nhất, camera bám sau lưng.\nPC: WASD đi, Q/E xoay người, giữ I/J/K/L để gồng rồi nhả để chém, giữ phím mũi tên để đỡ."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_font_size_override("font_size", 18)
 	help.add_theme_color_override("font_color", Color(0.85, 0.8, 0.7))
 	box.add_child(help)
+
+
+## Các tuỳ chỉnh cho chế độ "Tự chỉnh". Chỉ hiện khi chọn chế độ đó.
+func _build_custom(parent: Control) -> void:
+	var c := Game.custom_controls
+	_custom_box = VBoxContainer.new()
+	_custom_box.add_theme_constant_override("separation", 10)
+	_custom_box.visible = Game.control_mode == ControlPrefs.Mode.CUSTOM
+	parent.add_child(_custom_box)
+	_row(_custom_box, "Hướng mặt", {&"1": "Tự xoay (kéo)", &"0": "Khoá địch gần"}, &"1" if c.free_aim else &"0",
+		func(id): c.free_aim = id == &"1", [&"1", &"0"])
+	_row(_custom_box, "Kiểu chém", {&"1": "Nút CHÉM", &"0": "Vuốt cả vùng"}, &"1" if c.attack_button else &"0",
+		func(id): c.attack_button = id == &"1", [&"1", &"0"])
+	_row(_custom_box, "Cách đỡ (vuốt)", {&"0": "Nút ĐỠ", &"1": "Vuốt gấp khúc"}, StringName(str(c.block_scheme)),
+		func(id): c.block_scheme = int(String(id)))
+	_row(_custom_box, "Trợ ngắm", {&"1": "Bật", &"0": "Tắt"}, &"1" if c.aim_assist else &"0",
+		func(id): c.aim_assist = id == &"1", [&"1", &"0"])
+	_slider(_custom_box, "Độ nhạy xoay", 0.4, 2.5, 0.1, c.look_sensitivity, "x%.1f", func(v): c.look_sensitivity = v)
+	_slider(_custom_box, "Camera xa", 2.5, 6.0, 0.1, c.camera_distance, "%.1f m", func(v): c.camera_distance = v)
+	_slider(_custom_box, "Cỡ nút", 0.7, 1.4, 0.05, c.button_scale, "x%.2f", func(v): c.button_scale = v)
+
+
+func _slider(parent: Control, label: String, lo: float, hi: float, step: float, value: float, fmt: String, on_change: Callable) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	parent.add_child(row)
+	var l := Label.new()
+	l.text = label
+	l.custom_minimum_size = Vector2(170, 0)
+	l.add_theme_font_size_override("font_size", 24)
+	row.add_child(l)
+	var s := HSlider.new()
+	s.min_value = lo
+	s.max_value = hi
+	s.step = step
+	s.value = value
+	s.custom_minimum_size = Vector2(320, 48)
+	s.focus_mode = Control.FOCUS_NONE
+	row.add_child(s)
+	var v := Label.new()
+	v.text = fmt % value
+	v.add_theme_font_size_override("font_size", 22)
+	row.add_child(v)
+	s.value_changed.connect(func(x: float):
+		v.text = fmt % x
+		on_change.call(x))
 
 
 ## Một hàng nút chọn. options: id -> Resource có display_name, hoặc id -> String.
