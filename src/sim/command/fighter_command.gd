@@ -10,6 +10,8 @@ var attack_dir: int = Dir.NONE
 var attack_release: bool = false
 ## Hướng đỡ (Dir). NONE = không đỡ.
 var block_dir: int = Dir.NONE
+## true ở tick người chơi bấm lăn né. Hướng lăn là hướng move, không đi thì lăn lùi.
+var dodge: bool = false
 ## Người chơi tự ngắm: true thì tướng quay mặt về face_yaw thay vì tự nhìn địch gần nhất.
 var has_face: bool = false
 ## Góc muốn quay mặt tới (cùng quy ước FighterState.yaw).
@@ -17,7 +19,7 @@ var face_yaw: float = 0.0
 
 
 func to_dict() -> Dictionary:
-	return {"m": [move.x, move.y], "a": attack_dir, "r": attack_release, "b": block_dir, "hf": has_face, "fy": face_yaw}
+	return {"m": [move.x, move.y], "a": attack_dir, "r": attack_release, "b": block_dir, "hf": has_face, "fy": face_yaw, "d": dodge}
 
 
 static func from_dict(d: Dictionary) -> FighterCommand:
@@ -27,5 +29,6 @@ static func from_dict(d: Dictionary) -> FighterCommand:
 	c.attack_release = bool(d["r"])
 	c.block_dir = int(d["b"])
 	c.has_face = bool(d.get("hf", false))
+	c.dodge = bool(d.get("d", false))
 	c.face_yaw = float(d.get("fy", 0.0))
 	return c

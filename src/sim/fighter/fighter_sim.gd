@@ -10,14 +10,33 @@ static func apply_command(f: FighterState, cmd: FighterCommand, ctx: SimContext,
 	if not f.is_alive():
 		return
 	var w := f.def.weapon
+	if cmd.dodge and (f.state == S.IDLE or f.state == S.BLOCK or f.state == S.WINDUP):
+		if f.stamina >= ctx.rules.dodge_stamina_cost:
+			_start_dodge(f, cmd, ctx, events)
+			return
+		events.append({"type": &"no_stamina", "id": f.id})
 	match f.state:
 		S.IDLE:
 			if cmd.block_dir != Dir.NONE:
 				_start_block(f, cmd.block_dir, tick)
-			elif cmd.attack_dir != Dir.NONE and f.stamina >= w.attack_stamina_cost:
-				_start_windup(f, cmd.attack_dir, events)
-				if cmd.attack_release:
-					f.release_queued = true
+			elif cmd.attack_dir != Dir.NONE or (f.buffered_attack_dir != Dir.NONE and tick <= f.buffered_until):
+				var buffered := cmd.attack_dir == Dir.NONE
+				var d := f.buffered_attack_dir if buffered else cmd.attack_dir
+				if f.stamina >= w.attack_stamina_cost:
+					_start_windup(f, d, events)
+					f.release_queued = cmd.attack_release or buffered
+				elif cmd.attack_release or buffered:
+					events.append({"type": &"no_stamina", "id": f.id})
+				f.buffered_attack_dir = Dir.NONE
+		S.RELEASE, S.RECOVERY, S.STAGGER, S.DODGE:
+			# Bấm chém sớm khi đang bận: nhớ lệnh để chém ngay khi rảnh. Đang chém, đang thu thì
+			# luôn nhớ (chém liên hoàn); đang khựng, đang lăn thì chỉ nhớ khi sắp hết.
+			if cmd.attack_release and cmd.attack_dir != Dir.NONE:
+				var free_in := _ticks_until_free(f, ctx)
+				var chaining := f.state == S.RELEASE or f.state == S.RECOVERY
+				if chaining or free_in <= ctx.ticks(ctx.rules.attack_buffer_time):
+					f.buffered_attack_dir = cmd.attack_dir
+					f.buffered_until = tick + free_in + 2
 		S.WINDUP:
 			if cmd.block_dir != Dir.NONE and ctx.rules.allow_windup_cancel_to_block:
 				_start_block(f, cmd.block_dir, tick)
@@ -38,6 +57,35 @@ static func apply_command(f: FighterState, cmd: FighterCommand, ctx: SimContext,
 				f.block_dir = cmd.block_dir
 				f.block_started_tick = tick
 				events.append({"type": &"block_changed", "id": f.id, "dir": f.block_dir})
+
+
+static func _start_dodge(f: FighterState, cmd: FighterCommand, ctx: SimContext, events: Array) -> void:
+	var d := cmd.move
+	f.dodge_dir = d.normalized() if d.length() > 0.2 else -f.forward()
+	f.stamina = maxf(0.0, f.stamina - ctx.rules.dodge_stamina_cost)
+	f.stamina_wait = ctx.ticks(ctx.rules.stamina_regen_delay)
+	f.attack_dir = Dir.NONE
+	f.block_dir = Dir.NONE
+	f.release_queued = false
+	f.buffered_attack_dir = Dir.NONE
+	f.set_state(S.DODGE, ctx.ticks(ctx.rules.dodge_time))
+	events.append({"type": &"dodge", "id": f.id})
+
+
+## Số tick còn lại trước khi tướng rảnh tay (về IDLE).
+static func _ticks_until_free(f: FighterState, ctx: SimContext) -> int:
+	var w := f.def.weapon
+	match f.state:
+		S.RELEASE:
+			return ctx.ticks(w.release_time) - f.state_ticks + ctx.ticks(w.recovery_time)
+		S.DODGE:
+			return f.state_duration - f.state_ticks + ctx.ticks(ctx.rules.dodge_recovery)
+	return maxi(0, f.state_duration - f.state_ticks)
+
+
+## Đang lăn và còn trong lúc miễn trúng.
+static func is_invulnerable(f: FighterState, ctx: SimContext) -> bool:
+	return f.state == S.DODGE and f.state_ticks < ctx.ticks(ctx.rules.dodge_iframes)
 
 
 static func _start_block(f: FighterState, d: int, tick: int) -> void:
@@ -69,6 +117,9 @@ static func advance_timers(f: FighterState, ctx: SimContext, events: Array) -> v
 				f.stamina_wait = ctx.ticks(ctx.rules.stamina_regen_delay)
 				f.set_state(S.RELEASE)
 				events.append({"type": &"attack_released", "id": f.id, "dir": f.attack_dir})
+		S.DODGE:
+			if f.state_ticks >= f.state_duration:
+				f.set_state(S.RECOVERY, ctx.ticks(ctx.rules.dodge_recovery))
 		S.RECOVERY, S.STAGGER:
 			if f.state_ticks >= f.state_duration:
 				f.attack_dir = Dir.NONE
@@ -89,6 +140,13 @@ static func is_impact_tick(f: FighterState, ctx: SimContext) -> bool:
 static func move_and_face(f: FighterState, cmd: FighterCommand, face_target: Vector2, has_target: bool, ctx: SimContext) -> void:
 	if not f.is_alive():
 		f.velocity = Vector2.ZERO
+		return
+	if f.state == S.DODGE:
+		# Lăn: lao nhanh theo hướng đã chọn rồi chậm dần, không xoay người.
+		var t := float(f.state_ticks) / maxf(1.0, f.state_duration)
+		var speed := ctx.rules.dodge_distance / ctx.rules.dodge_time / 0.75
+		f.velocity = f.dodge_dir * speed * (1.0 - 0.5 * t)
+		f.pos += f.velocity * ctx.dt
 		return
 	var mult := 1.0
 	match f.state:

@@ -33,6 +33,9 @@ func get_command(state: MatchState) -> FighterCommand:
 	c.has_face = free_aim
 	c.face_yaw = yaw
 
+	# Gọi cả hai để bàn phím luôn cập nhật trạng thái phím.
+	var key_dodge := keyboard.consume_dodge()
+	c.dodge = touch.consume_dodge() or key_dodge
 	c.block_dir = touch.block_dir()
 	if c.block_dir == Dir.NONE:
 		c.block_dir = keyboard.block_dir()

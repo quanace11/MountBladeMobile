@@ -11,6 +11,8 @@ var _fps_label: Label
 var _mode_btn: Button
 var _end_panel: PanelContainer
 var _end_label: Label
+## Thanh thể lực nháy đỏ khi bấm chém/lăn mà không đủ thể lực.
+var _stamina_flash := 0.0
 
 
 func setup(p_runner: MatchRunner, p_quality: QualityManager) -> void:
@@ -48,11 +50,19 @@ func setup(p_runner: MatchRunner, p_quality: QualityManager) -> void:
 
 	_build_end_panel()
 	EventBus.match_over.connect(_on_match_over)
+	EventBus.sim_event.connect(_on_sim_event)
 
 
 func _exit_tree() -> void:
 	if EventBus.match_over.is_connected(_on_match_over):
 		EventBus.match_over.disconnect(_on_match_over)
+	if EventBus.sim_event.is_connected(_on_sim_event):
+		EventBus.sim_event.disconnect(_on_sim_event)
+
+
+func _on_sim_event(e: Dictionary) -> void:
+	if e["type"] == &"no_stamina" and e["id"] == runner.player_id:
+		_stamina_flash = 1.0
 
 
 func _button(text: String) -> Button:
@@ -102,7 +112,8 @@ func _on_match_over(winner_team: int) -> void:
 	_end_panel.position = (get_viewport_rect().size - _end_panel.size) * 0.5
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_stamina_flash = maxf(0.0, _stamina_flash - delta * 2.5)
 	_fps_label.text = "%d fps  ·  %d%%" % [Engine.get_frames_per_second(), roundi(quality.scale * 100.0)]
 	queue_redraw()
 
@@ -112,6 +123,8 @@ func _draw() -> void:
 		return
 	var p := runner.player()
 	_draw_bar(Vector2(24, 104), Vector2(320, 22), p.hp / p.def.max_hp, Color(0.8, 0.15, 0.1))
+	if _stamina_flash > 0.0:
+		draw_rect(Rect2(Vector2(20, 128), Vector2(328, 20)), Color(1, 0.1, 0.05, _stamina_flash * 0.8))
 	_draw_bar(Vector2(24, 132), Vector2(320, 12), p.stamina / p.def.max_stamina, Color(0.95, 0.75, 0.2))
 	draw_string(_font, Vector2(24, 96), p.def.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 

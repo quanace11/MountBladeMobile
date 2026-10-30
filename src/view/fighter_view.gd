@@ -45,6 +45,10 @@ var _left_hand_target := Vector3.ZERO
 
 var _flash := 0.0
 var _jolt := 0.0
+## Góc vũ khí hiện tại (độ, Euler). Nội suy theo góc chứ không theo quaternion để vũ khí
+## luôn đi vòng phía trước người, không quét ra sau lưng khi đổi hướng.
+var _hand_rot := Vector3.ZERO
+var _body_scale := Vector3.ONE
 var _gait := 0.0
 var _gait_amount := 0.0
 var _local_vel := Vector2.ZERO
@@ -63,6 +67,7 @@ func setup(p_state: FighterState, p_poses: PoseSet, p_is_player: bool) -> void:
 	var p: Array = poses.get_pose("idle")
 	_hand.position = p[0]
 	_hand.rotation_degrees = p[1]
+	_hand_rot = p[1]
 	_left_hand_target = poses.shield_idle_pos
 
 
@@ -125,7 +130,8 @@ func _build() -> void:
 	_armor_mat = Mats.shader(LAMELLAR, {"tint": def.armor_color, "lace": Color(0.78, 0.58, 0.22)})
 
 	_body = Node3D.new()
-	_body.scale = Vector3.ONE * (def.height / 1.8)
+	_body_scale = Vector3.ONE * (def.height / 1.8)
+	_body.scale = _body_scale
 	add_child(_body)
 
 	_pelvis = Node3D.new()
@@ -260,6 +266,7 @@ func sync(cur: FighterState, prev_pos: Vector2, prev_yaw: float, alpha: float, d
 		_body.rotation.x = lerpf(0.0, deg_to_rad(82.0), ease(_death_t, 0.4))
 		_gait_amount = 0.0
 	else:
+		_update_roll(cur, alpha)
 		_update_hand_pose(cur, delta)
 		_update_torso(cur, delta)
 	_update_gait(cur, delta)
@@ -307,11 +314,28 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 		target = [target[0] + Vector3(0.0, -0.05, 0.14) * _jolt, target[1]]
 	var k := 1.0 - exp(-speed * delta)
 	_hand.position = _hand.position.lerp(target[0], k)
-	var q_to := Basis.from_euler(target[1] * (PI / 180.0)).get_rotation_quaternion()
-	_hand.quaternion = _hand.quaternion.slerp(q_to, k)
+	_hand_rot = _hand_rot.lerp(target[1], k)
+	_hand.rotation_degrees = _hand_rot
 
 	var shield_target := poses.shield_block_pos if cur.state == S.BLOCK else poses.shield_idle_pos
 	_left_hand_target = _left_hand_target.lerp(shield_target, 1.0 - exp(-poses.blend_speed * 1.6 * delta))
+
+
+## Lăn né: cả người lộn một vòng quanh hông theo hướng lăn.
+func _update_roll(cur: FighterState, alpha: float) -> void:
+	if cur.state != S.DODGE:
+		_body.transform = Transform3D(Basis.from_scale(_body_scale), Vector3.ZERO)
+		return
+	var t := clampf((cur.state_ticks + alpha) / maxf(1.0, cur.state_duration), 0.0, 1.0)
+	var d := Basis(Vector3.UP, -rotation.y) * Vector3(cur.dodge_dir.x, 0.0, cur.dodge_dir.y)
+	var axis := Vector3.UP.cross(d)
+	if axis.length() < 0.01:
+		return
+	var rot := Basis(axis.normalized(), TAU * ease(t, -1.6))
+	var pivot := Vector3(0, 0.6, 0) * _body_scale
+	# Hạ thấp người lúc đang lộn để không lơ lửng.
+	var origin := pivot - rot * pivot - Vector3(0, 0.25 * sin(PI * t), 0)
+	_body.transform = Transform3D(rot * Basis.from_scale(_body_scale), origin)
 
 
 ## Thân trên xoay theo hướng gồng/chém, ngả khi bổ hoặc bị khựng. Đầu giữ nhìn về trước.
