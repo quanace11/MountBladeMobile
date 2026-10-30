@@ -39,6 +39,12 @@ extends Resource
 @export var speed_bonus_per_mps: float = 0.08
 @export var speed_bonus_min: float = 0.8
 @export var speed_bonus_max: float = 1.35
+## Điểm ngọt của vũ khí (như Mount & Blade): địch đứng quá sát thì trúng phần cán, chuôi nên đau ít.
+## Khoảng cách tính theo tỉ lệ tầm đánh: dưới close_hit_ratio chỉ còn close_hit_mult sát thương,
+## từ sweet_spot_ratio trở ra là đủ sát thương, ở giữa tăng dần.
+@export var close_hit_ratio: float = 0.45
+@export var close_hit_mult: float = 0.5
+@export var sweet_spot_ratio: float = 0.7
 ## Có dùng thể lực không. Mount & Blade 2 đánh cận chiến không tốn thể lực: tắt thì chém, đỡ, lăn
 ## bao nhiêu cũng được và đỡ không bao giờ bị phá thế.
 @export var use_stamina: bool = false

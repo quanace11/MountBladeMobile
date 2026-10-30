@@ -33,6 +33,7 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
   (A chém từ bên phải của A thì B phải đỡ bên trái của B).
 - Giơ đỡ đúng hướng sát lúc đòn tới là **đỡ hoàn hảo**: người chém bị khựng lâu.
+- Đứng quá sát thì trúng cán, chuôi nên chỉ còn nửa sát thương; đúng tầm lưỡi mới đau nhất (điểm ngọt như M&B2).
 - Như Mount & Blade 2, đánh cận chiến không tốn thể lực: chém, đỡ bao nhiêu cũng được, đỡ không bị phá thế.
   Muốn bật lại thể lực thì đặt `use_stamina = true` trong `config/combat_rules.tres`.
   Đòn từ sau lưng hoặc bên sườn không đỡ được.
