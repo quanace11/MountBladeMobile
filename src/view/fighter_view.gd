@@ -57,6 +57,8 @@ var _model_flash: StandardMaterial3D
 var _rig_ankle_offset := 0.0
 var _gait := 0.0
 var _gait_amount := 0.0
+## 0 = đi bộ, 1 = chạy hẳn.
+var _run := 0.0
 var _local_vel := Vector2.ZERO
 var _death_t := 0.0
 var _twist := 0.0
@@ -448,29 +450,74 @@ func _update_gait(cur: FighterState, delta: float) -> void:
 	var fwd := Vector2(-sin(rotation.y), -cos(rotation.y))
 	_local_vel = _local_vel.lerp(Vector2(cur.velocity.dot(right), -cur.velocity.dot(fwd)), 1.0 - exp(-10.0 * delta))
 	var spd := _local_vel.length()
-	_gait += spd / maxf(0.1, poses.stride_length) * TAU * delta
-	_gait_amount = lerpf(_gait_amount, clampf(spd / maxf(0.1, def.move_speed), 0.0, 1.0), 1.0 - exp(-8.0 * delta))
-	_pelvis.position.y = HIP_HEIGHT - absf(sin(_gait)) * 0.035 * _gait_amount - 0.03
-	_pelvis.rotation.y = sin(_gait) * 0.12 * _gait_amount
+	var k := 1.0 - exp(-8.0 * delta)
+	_run = lerpf(_run, clampf(inverse_lerp(poses.walk_speed, poses.run_speed, spd), 0.0, 1.0), k)
+	_gait_amount = lerpf(_gait_amount, clampf(spd / 0.8, 0.0, 1.0), k)
+	# Một chu kỳ thân đi được một sải = hai bước. Chân chạm đất đi lùi 2*reach trong duty phần chu kỳ,
+	# nên sải = 2*reach/duty thì bàn chân không trượt trên đất.
+	var stride := 2.0 * _foot_reach() / _duty()
+	_gait = fmod(_gait + spd / stride * TAU * delta, TAU * 64.0)
+	# Hông thấp nhất lúc chân vừa tiếp đất (hai lần mỗi chu kỳ), cao nhất lúc chân kia vung qua.
+	var bob := lerpf(0.025, 0.045, _run) * (0.5 + 0.5 * cos(2.0 * _gait - PI * _duty())) * _gait_amount
+	_pelvis.position.y = HIP_HEIGHT - 0.03 - poses.run_crouch * _run * _gait_amount - bob
+	# Chạy thì người đổ về trước.
+	_chest.rotation.x = _lean - deg_to_rad(poses.run_lean_deg) * _run * _gait_amount * _forwardness()
 	if _cape_mat:
 		_cape_mat.set_shader_parameter("sway", clampf(-_local_vel.y * 0.07, -0.1, 0.4))
 
 
+func _foot_reach() -> float:
+	return lerpf(poses.walk_foot_reach, poses.run_foot_reach, _run)
+
+
+func _duty() -> float:
+	return lerpf(poses.walk_duty, poses.run_duty, _run)
+
+
+## 1 khi chạy thẳng tới, 0 khi đi ngang hay đi lùi.
+func _forwardness() -> float:
+	return clampf(-_local_vel.y / maxf(0.1, _local_vel.length()), 0.0, 1.0)
+
+
+## Một bàn chân tại pha u (0..1): [dọc hướng đi -1..1, độ nhấc 0..1, góc gập bàn chân (radian, dương = mũi nhấc lên)].
+## Pha 0 là lúc gót vừa chạm đất ở phía trước.
+func _foot_cycle(u: float) -> Array:
+	var duty := _duty()
+	if u < duty:
+		var s := u / duty
+		# Đặt gót, hạ cả bàn, rồi nhón mũi đẩy đi.
+		var pitch := 0.3 * (1.0 - smoothstep(0.0, 0.2, s)) - 0.55 * smoothstep(0.65, 1.0, s)
+		return [lerpf(1.0, -1.0, s), 0.0, pitch]
+	var t := (u - duty) / (1.0 - duty)
+	var e := t * t * (3.0 - 2.0 * t)
+	# Vung chân: mũi chúc xuống lúc rời đất, nhấc lên chuẩn bị đặt gót.
+	return [lerpf(-1.0, 1.0, e), sin(PI * minf(1.0, t * 1.15)), lerpf(-0.55, 0.3, smoothstep(0.3, 0.95, t))]
+
+
 func _update_limbs() -> void:
-	var pelvis := _pelvis.transform
-	var chest := pelvis * _chest.transform
 	var move_dir := Vector3(_local_vel.x, 0, _local_vel.y)
 	move_dir = move_dir.normalized() if move_dir.length() > 0.05 else Vector3(0, 0, -1)
-	var half := poses.stride_length * 0.5 * _gait_amount
+	var reach := _foot_reach() * _gait_amount
+	var lift := lerpf(poses.foot_lift, poses.run_foot_lift, _run) * _gait_amount
+
+	var cycle := {}
+	for side in [-1, 1]:
+		cycle[side] = _foot_cycle(fposmod((_gait + (PI if side == 1 else 0.0)) / TAU, 1.0))
+	# Hông xoay theo chân: chân nào đang ở trước thì hông bên đó đưa ra trước.
+	_pelvis.rotation.y = -((cycle[-1][0] as float) - (cycle[1][0] as float)) * 0.06 * _gait_amount * _forwardness()
+	var pelvis := _pelvis.transform
+	var chest := pelvis * _chest.transform
 
 	var feet := {}
 	var knee_poles := {}
+	var foot_pitch := {}
 	for side in [-1, 1]:
-		var phase := _gait + (PI if side == 1 else 0.0)
+		var c: Array = cycle[side]
 		# Thế đứng thủ: chân trái trước, chân phải sau.
-		var stance := Vector3(0.13 * side, ANKLE_HEIGHT, 0.1 * side)
-		var foot := stance + move_dir * sin(phase) * half
-		foot.y += maxf(0.0, cos(phase)) * poses.foot_lift * _gait_amount
+		var stance := Vector3(0.13 * side, ANKLE_HEIGHT, 0.1 * side * (1.0 - _gait_amount))
+		var foot := stance + move_dir * (c[0] as float) * reach
+		foot.y += (c[1] as float) * lift
+		foot_pitch[side] = (c[2] as float) * _gait_amount
 		var hip := pelvis * Vector3(HIP_JOINT.x * side, HIP_JOINT.y, HIP_JOINT.z)
 		feet[side] = foot + Vector3(0, _rig_ankle_offset, 0)
 		knee_poles[side] = Vector3(0.3 * side, 0, -1)
@@ -478,7 +525,7 @@ func _update_limbs() -> void:
 		_segment(_thigh[side], hip, knee)
 		_segment(_shin[side], knee, foot)
 		(_foot[side] as MeshInstance3D).position = foot + Vector3(0, -0.03, -0.06)
-		(_foot[side] as MeshInstance3D).rotation = Vector3(0, _pelvis.rotation.y * 0.5, 0)
+		(_foot[side] as MeshInstance3D).rotation = Vector3(foot_pitch[side], _pelvis.rotation.y * 0.5, 0)
 
 	# Tay phải luôn nắm vũ khí.
 	var r_sh := chest * Vector3(SHOULDER.x, SHOULDER.y, SHOULDER.z)
@@ -497,8 +544,8 @@ func _update_limbs() -> void:
 		_shield.rotation = Vector3(0.1, _twist * 0.5, 0.0)
 
 	if _rig:
-		_rig.pose(HIP_HEIGHT - _pelvis.position.y, _pelvis.rotation.y, Vector3(_lean, _twist, 0.0), Vector3(-_lean * 0.5, -_twist * 0.6, 0.0),
-			{1: _hand.position, -1: l_hand}, {1: Vector3(0.4, -0.6, 0.5), -1: Vector3(-0.4, -0.6, 0.5)}, feet, knee_poles)
+		_rig.pose(HIP_HEIGHT - _pelvis.position.y, _pelvis.rotation.y, Vector3(_chest.rotation.x, _twist, 0.0), Vector3(-_lean * 0.5, -_twist * 0.6, 0.0),
+			{1: _hand.position, -1: l_hand}, {1: Vector3(0.4, -0.6, 0.5), -1: Vector3(-0.4, -0.6, 0.5)}, feet, knee_poles, foot_pitch)
 
 
 ## Đặt cánh tay theo IK; trả về vị trí bàn tay thực tế.

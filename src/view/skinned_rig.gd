@@ -52,8 +52,9 @@ func setup(model: Node3D, model_height: float) -> bool:
 ## chest: (ngả, xoay) của thân trên; head: góc đầu bù lại.
 ## hands/feet: side -> vị trí cổ tay/cổ chân mong muốn, hoặc null để giữ nguyên.
 ## poles: side -> hướng khuỷu tay/đầu gối nên chĩa về (toạ độ thân).
+## foot_pitch: side -> góc gập bàn chân (radian, dương = mũi nhấc lên).
 func pose(pelvis_drop: float, pelvis_yaw: float, chest: Vector3, head: Vector3,
-		hands: Dictionary, hand_poles: Dictionary, feet: Dictionary, knee_poles: Dictionary) -> void:
+		hands: Dictionary, hand_poles: Dictionary, feet: Dictionary, knee_poles: Dictionary, foot_pitch: Dictionary = {}) -> void:
 	skel.reset_bone_poses()
 	var yaw := Basis(Vector3.UP, pelvis_yaw)
 	skel.set_bone_pose_position(_pelvis, skel.get_bone_pose_position(_pelvis) + _parent_basis(_pelvis).inverse() * (to_skel.basis * Vector3(0, -pelvis_drop, 0)))
@@ -70,6 +71,8 @@ func pose(pelvis_drop: float, pelvis_yaw: float, chest: Vector3, head: Vector3,
 	for side in feet:
 		if feet[side] != null:
 			_limb(_leg[side], to_skel * (feet[side] as Vector3), to_skel.basis * (knee_poles[side] as Vector3), true)
+			# Gập bàn chân: đặt gót, nhón mũi.
+			_rotate_global(_leg[side][2], _body_rot(Basis(Vector3.RIGHT, foot_pitch.get(side, 0.0))))
 
 
 ## Vị trí một xương theo toạ độ thân (dùng để biết vai, hông đang ở đâu).

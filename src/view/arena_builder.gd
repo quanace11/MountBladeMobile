@@ -1,11 +1,10 @@
 class_name ArenaBuilder
 extends RefCounted
-## Dựng đấu trường: bầu trời thật, nền đất pha cỏ, hàng rào cọc gỗ có cổng và chòi canh,
-## nhà ngói, cây, đá, cờ, đồi núi xa. Vật lặp lại (cọc, cây, đá) vẽ bằng MultiMesh để ít lệnh vẽ.
+## Dựng bãi đấu: bầu trời thật, nền đất pha cỏ, không rào chắn; nhà ngói, cây, đá rải xa
+## ngoài vùng đánh nhau, đồi núi ở chân trời. Vật lặp lại (cọc, cây, đá) vẽ bằng MultiMesh để ít lệnh vẽ.
 
 const GROUND_SHADER := "res://assets/shaders/ground.gdshader"
 const TERRAIN_SHADER := "res://assets/shaders/terrain.gdshader"
-const BANNER_SHADER := "res://assets/shaders/banner.gdshader"
 
 
 static func build(parent: Node3D, cfg: GameConfig, q: QualityPreset, a: ArenaDef) -> DirectionalLight3D:
@@ -13,10 +12,7 @@ static func build(parent: Node3D, cfg: GameConfig, q: QualityPreset, a: ArenaDef
 	rng.seed = a.seed
 	var sun := _environment(parent, a, q)
 	_ground(parent, cfg, a)
-	var gate := _palisade(parent, cfg, a, rng)
-	_gate_towers(parent, cfg, gate, a)
-	_banners(parent, cfg, a, gate)
-	var spots := _scatter_spots(a, q, rng, gate)
+	var spots := _scatter_spots(a, q, rng)
 	_houses(parent, a, spots["houses"], rng)
 	_trees(parent, a, spots["trees"], rng)
 	_rocks(parent, a, spots["rocks"], rng)
@@ -65,7 +61,7 @@ static func _ground(parent: Node3D, cfg: GameConfig, a: ArenaDef) -> void:
 		"grass_albedo": load(a.grass_texture + "_diff.jpg"),
 		"grass_normal": load(a.grass_texture + "_nor.jpg"),
 		"grass_rough": load(a.grass_texture + "_rough.jpg"),
-		"arena_radius": cfg.arena_radius + a.palisade_gap,
+		"arena_radius": a.dirt_radius,
 		"dirt_scale": a.dirt_scale,
 		"grass_scale": a.grass_scale,
 		"grass_tint": a.grass_tint,
@@ -86,111 +82,8 @@ static func _multimesh(parent: Node3D, mesh: Mesh, transforms: Array) -> MultiMe
 	return mmi
 
 
-## Hàng rào cọc gỗ nhọn đầu quanh đấu trường, chừa một cổng. Trả về góc cổng (radian).
-static func _palisade(parent: Node3D, cfg: GameConfig, a: ArenaDef, rng: RandomNumberGenerator) -> float:
-	var r := cfg.arena_radius + a.palisade_gap
-	var gate := deg_to_rad(a.gate_angle_deg)
-	var gate_half := a.gate_width * 0.5 / r
-	var count := int(TAU * r / (a.log_radius * 1.9))
-	var bark := Mats.pbr(a.bark_texture, 1.0)
-	var logs := []
-	var tips := []
-	for i in count:
-		var ang := TAU * i / count
-		if absf(wrapf(ang - gate, -PI, PI)) < gate_half:
-			continue
-		var h := rng.randf_range(a.log_height_min, a.log_height_max)
-		var basis := Basis(Vector3.UP, rng.randf() * TAU).rotated(Vector3(cos(ang), 0, sin(ang)).cross(Vector3.UP), rng.randf_range(-0.03, 0.03))
-		var pos := Vector3(cos(ang) * r, 0, sin(ang) * r)
-		logs.append(Transform3D(basis.scaled(Vector3(1, h, 1)), pos + Vector3(0, h * 0.5, 0)))
-		tips.append(Transform3D(basis, pos + basis.y * h + Vector3(0, 0.18, 0)))
-	var log_mesh := FighterView.cyl(a.log_radius, a.log_radius * 1.05, 1.0, 7)
-	log_mesh.material = bark
-	_multimesh(parent, log_mesh, logs)
-	var tip_mesh := FighterView.cyl(0.0, a.log_radius, 0.36, 7)
-	tip_mesh.material = bark
-	_multimesh(parent, tip_mesh, tips)
-	# Hai thanh ngang buộc cọc, nhìn từ trong đấu trường.
-	var wood := Mats.pbr(a.wood_texture, 1.0)
-	for y in [0.9, 2.0]:
-		var ring := TorusMesh.new()
-		ring.inner_radius = r - a.log_radius - 0.12
-		ring.outer_radius = r - a.log_radius
-		ring.rings = 64
-		ring.ring_segments = 4
-		ring.material = wood
-		var mi := MeshInstance3D.new()
-		mi.mesh = ring
-		mi.position.y = y
-		parent.add_child(mi)
-	return gate
-
-
-## Hai chòi canh hai bên cổng: bốn cột, sàn, lan can, mái ngói.
-static func _gate_towers(parent: Node3D, cfg: GameConfig, gate: float, a: ArenaDef) -> void:
-	var wood := Mats.pbr(a.wood_texture, 1.0)
-	var roof := Mats.pbr(a.roof_texture, 1.5)
-	for side in [-1.0, 1.0]:
-		var r := cfg.arena_radius + a.palisade_gap
-		var ang: float = gate + side * (a.gate_width * 0.5 + 1.1) / r
-		var tower := Node3D.new()
-		tower.position = Vector3(cos(ang) * (r + 0.6), 0, sin(ang) * (r + 0.6))
-		tower.rotation.y = -ang + PI * 0.5
-		parent.add_child(tower)
-		for cx in [-0.8, 0.8]:
-			for cz in [-0.8, 0.8]:
-				var post := MeshInstance3D.new()
-				post.mesh = FighterView.cyl(0.11, 0.13, 5.2, 6)
-				post.material_override = wood
-				post.position = Vector3(cx, 2.6, cz)
-				tower.add_child(post)
-		var floor := MeshInstance3D.new()
-		floor.mesh = FighterView.box(Vector3(2.0, 0.15, 2.0))
-		floor.material_override = wood
-		floor.position.y = 3.6
-		tower.add_child(floor)
-		for k in 4:
-			var rail := MeshInstance3D.new()
-			rail.mesh = FighterView.box(Vector3(2.0, 0.6, 0.08))
-			rail.material_override = wood
-			rail.position = Vector3(0, 4.0, 0).rotated(Vector3.UP, k * PI * 0.5) + Vector3(0, 0, 0.96).rotated(Vector3.UP, k * PI * 0.5)
-			rail.rotation.y = k * PI * 0.5
-			tower.add_child(rail)
-		var cap := MeshInstance3D.new()
-		var pyramid := FighterView.cyl(0.0, 1.75, 1.2, 4)
-		cap.mesh = pyramid
-		cap.material_override = roof
-		cap.position.y = 5.8
-		cap.rotation.y = PI * 0.25
-		tower.add_child(cap)
-
-
-static func _banners(parent: Node3D, cfg: GameConfig, a: ArenaDef, gate: float) -> void:
-	var r := cfg.arena_radius + a.palisade_gap - 0.5
-	var wood := Mats.color(Color(0.3, 0.2, 0.12), 0.8)
-	var colors := [Color(0.7, 0.08, 0.05), Color(0.85, 0.65, 0.12)]
-	for i in a.banner_count:
-		var ang := gate + PI + (i - (a.banner_count - 1) * 0.5) * 0.45
-		var base := Vector3(cos(ang) * r, 0, sin(ang) * r)
-		var pole := MeshInstance3D.new()
-		pole.mesh = FighterView.cyl(0.04, 0.05, 5.0, 6)
-		pole.material_override = wood
-		pole.position = base + Vector3(0, 2.5, 0)
-		parent.add_child(pole)
-		var flag := MeshInstance3D.new()
-		var quad := QuadMesh.new()
-		quad.size = Vector2(1.0, 1.6)
-		quad.subdivide_width = 6
-		flag.mesh = quad
-		flag.material_override = Mats.shader(BANNER_SHADER, {"color": colors[i % 2]})
-		flag.position = base + Vector3(0, 4.1, 0)
-		flag.rotation.y = -ang
-		flag.translate_object_local(Vector3(-0.5, 0, 0))
-		parent.add_child(flag)
-
-
-## Chọn chỗ đặt nhà, cây, đá ngoài hàng rào, tránh trước cổng và tránh chồng lên nhau.
-static func _scatter_spots(a: ArenaDef, q: QualityPreset, rng: RandomNumberGenerator, gate: float) -> Dictionary:
+## Chọn chỗ đặt nhà, cây, đá ngoài vùng đánh nhau, tránh chồng lên nhau.
+static func _scatter_spots(a: ArenaDef, q: QualityPreset, rng: RandomNumberGenerator) -> Dictionary:
 	var taken: Array = []
 	var out := {"houses": [], "trees": [], "rocks": []}
 	var plan := [["houses", roundi(a.house_count * q.scenery_density), 6.5], ["trees", roundi(a.tree_count * q.scenery_density), 2.5], ["rocks", roundi(a.rock_count * q.scenery_density), 1.5]]
@@ -200,8 +93,6 @@ static func _scatter_spots(a: ArenaDef, q: QualityPreset, rng: RandomNumberGener
 		while placed < p[1] and tries < 400:
 			tries += 1
 			var ang := rng.randf() * TAU
-			if absf(wrapf(ang - gate, -PI, PI)) < 0.35:
-				continue
 			var rad := rng.randf_range(a.scenery_radius_min, a.scenery_radius_max)
 			var pos := Vector2(cos(ang), sin(ang)) * rad
 			var ok := true

@@ -19,15 +19,9 @@ extends Resource
 @export var grass_scale: float = 0.5
 @export var ground_size: float = 260.0
 
-@export_group("Hàng rào cọc")
+## Bán kính khoảng đất trống giữa bãi (mét); ra ngoài là cỏ.
+@export var dirt_radius: float = 16.0
 @export var bark_texture: String = ""
-@export var palisade_gap: float = 1.2
-@export var log_radius: float = 0.17
-@export var log_height_min: float = 2.6
-@export var log_height_max: float = 3.2
-## Cổng: góc (độ) và độ rộng (mét).
-@export var gate_angle_deg: float = 90.0
-@export var gate_width: float = 3.0
 
 @export_group("Cảnh vật")
 @export var wood_texture: String = ""
@@ -38,7 +32,6 @@ extends Resource
 @export var house_count: int = 6
 @export var tree_count: int = 24
 @export var rock_count: int = 14
-@export var banner_count: int = 6
 @export var scenery_radius_min: float = 24.0
 @export var scenery_radius_max: float = 48.0
 @export var hill_radius_inner: float = 60.0

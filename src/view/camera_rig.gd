@@ -25,7 +25,7 @@ func setup(p_config: GameConfig, p_target: FighterView) -> void:
 	camera = Camera3D.new()
 	camera.fov = config.camera_fov
 	camera.near = 0.1
-	camera.far = 120.0
+	camera.far = 320.0
 	add_child(camera)
 	camera.make_current()
 	yaw = target.rotation.y

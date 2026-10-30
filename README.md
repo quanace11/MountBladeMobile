@@ -70,7 +70,7 @@ config/            Toàn bộ số liệu (.tres, chỉnh trong Inspector của 
   matches/         Kịch bản 1v1 .. 1v4
   quality/         Preset đồ họa thấp / vừa / cao
   input/           Bố cục và ngưỡng cảm ứng
-  visual/          Tư thế tay cầm vũ khí, đấu trường (texture, số nhà/cây/đá, hàng rào)
+  visual/          Tư thế tay cầm vũ khí, đấu trường (texture, số nhà/cây/đá; bãi không rào, rộng bán kính 60 m)
   combat_rules.tres, game_config.tres, audio.tres
 src/
   core/            Autoload (ConfigDB, EventBus, Game), MatchRunner ghép các tầng, QualityManager
