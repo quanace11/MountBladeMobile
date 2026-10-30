@@ -40,6 +40,11 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
   Muốn bật lại thể lực thì đặt `use_stamina = true` trong `config/combat_rules.tres`.
   Đòn từ sau lưng hoặc bên sườn không đỡ được.
 - Chém trúng địch đầu tiên trong tầm và cung chém; ngoài tầm thì hụt.
+- Bị chém trúng (như M&B2): người giật theo hướng lưỡi vũ khí, xô lùi nửa bước, máu phụt theo hướng chém và
+  văng xuống đất, có tiếng rên. Người chơi trúng đòn thì viền màn hình chớp đỏ, máu thấp thì viền đỏ mờ luôn hiện.
+- Chết: khuỵu gối rồi đổ theo hướng đòn, vũ khí văng khỏi tay, vũng máu loang dần, tiếng hét và tiếng thân ngã.
+  Dòng báo kiểu Bannerlord: "Gây 36 sát thương." dưới thanh máu, "Bạn đã hạ ..." ở góc phải; bảng kết thúc
+  hiện sau 2,5 giây cho thấy người cuối cùng ngã.
 - Bị chém trúng khi đang gồng hoặc đang vung thì khựng và mất đòn (như Mount & Blade). Hai người chém trúng nhau
   cùng lúc thì cả hai đòn đều tính.
 - Lao tới khi chém thì đòn mạnh hơn (tối đa ×1,35), vừa lùi vừa chém thì yếu hơn (tối thiểu ×0,8), như Mount & Blade.
