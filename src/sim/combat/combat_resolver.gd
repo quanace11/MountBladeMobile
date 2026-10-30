@@ -84,15 +84,15 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 	if target.state == S.BLOCK and in_cone and dir_ok:
 		var parried := tick - target.block_started_tick <= ctx.ticks(rules.parry_window)
 		if parried:
-			if rules.parry_costs_stamina:
+			if rules.use_stamina and rules.parry_costs_stamina:
 				target.stamina = maxf(0.0, target.stamina - dmg * rules.block_stamina_per_damage)
 			attacker.set_state(S.STAGGER, ctx.ticks(rules.stagger_on_parried))
 			attacker.recoil = true
 			events.append(base.merged({"type": &"parried"}))
 			return
-		var cost := dmg * rules.block_stamina_per_damage
+		var cost := dmg * rules.block_stamina_per_damage if rules.use_stamina else 0.0
 		target.stamina_wait = ctx.ticks(rules.stamina_regen_delay)
-		if target.stamina < cost:
+		if rules.use_stamina and target.stamina < cost:
 			target.stamina = 0.0
 			target.block_dir = Dir.NONE
 			target.set_state(S.STAGGER, ctx.ticks(rules.guard_break_stun))

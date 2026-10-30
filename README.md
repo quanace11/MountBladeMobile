@@ -28,15 +28,14 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - **Tay phải**: nút **CHÉM** sát góc phải dưới: giữ và kéo về hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó),
   nhả tay để chém; bấm không kéo là bổ. Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
   Nhả nút khi đang chém dở hoặc đang thu vũ khí thì game nhớ lệnh và chém tiếp ngay khi rảnh (chém liên hoàn).
-  Không đủ thể lực thì không chém được và thanh thể lực nháy đỏ.
 - Nút **ĐỠ** bên trái nút CHÉM: giữ và kéo về phía đòn đang đến.
-- Nút **LĂN** phía trên nút CHÉM: lộn một vòng theo hướng đang đẩy joystick (không đẩy thì lăn lùi), khoảng 2,6 m.
-  Đầu cú lăn không bị chém trúng; tốn thể lực. Dùng để thoát vòng vây khi đánh 1 vs nhiều.
   Kiểu vuốt cả vùng (trong *Tự chỉnh*) đỡ bằng nút ĐỠ hoặc nét gấp khúc `^` `<` `>` `v`, giữ ngón tay là giữ thế đỡ.
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
   (A chém từ bên phải của A thì B phải đỡ bên trái của B).
 - Giơ đỡ đúng hướng sát lúc đòn tới là **đỡ hoàn hảo**: người chém bị khựng lâu.
-- Đỡ tốn thể lực; hết thể lực thì bị phá thế. Đòn từ sau lưng hoặc bên sườn không đỡ được.
+- Như Mount & Blade 2, đánh cận chiến không tốn thể lực: chém, đỡ bao nhiêu cũng được, đỡ không bị phá thế.
+  Muốn bật lại thể lực thì đặt `use_stamina = true` trong `config/combat_rules.tres`.
+  Đòn từ sau lưng hoặc bên sườn không đỡ được.
 - Chém trúng địch đầu tiên trong tầm và cung chém; ngoài tầm thì hụt.
 - Bị chém trúng khi đang gồng hoặc đang vung thì khựng và mất đòn (như Mount & Blade). Hai người chém trúng nhau
   cùng lúc thì cả hai đòn đều tính.

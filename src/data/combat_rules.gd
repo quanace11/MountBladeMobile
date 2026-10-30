@@ -39,5 +39,8 @@ extends Resource
 @export var speed_bonus_per_mps: float = 0.08
 @export var speed_bonus_min: float = 0.8
 @export var speed_bonus_max: float = 1.35
+## Có dùng thể lực không. Mount & Blade 2 đánh cận chiến không tốn thể lực: tắt thì chém, đỡ, lăn
+## bao nhiêu cũng được và đỡ không bao giờ bị phá thế.
+@export var use_stamina: bool = false
 ## Thể lực bắt đầu hồi sau khi dùng (giây).
 @export var stamina_regen_delay: float = 0.8

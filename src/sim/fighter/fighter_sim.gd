@@ -11,7 +11,7 @@ static func apply_command(f: FighterState, cmd: FighterCommand, ctx: SimContext,
 		return
 	var w := f.def.weapon
 	if cmd.dodge and (f.state == S.IDLE or f.state == S.BLOCK or f.state == S.WINDUP):
-		if f.stamina >= ctx.rules.dodge_stamina_cost:
+		if not ctx.rules.use_stamina or f.stamina >= ctx.rules.dodge_stamina_cost:
 			_start_dodge(f, cmd, ctx, events)
 			return
 		events.append({"type": &"no_stamina", "id": f.id})
@@ -22,7 +22,7 @@ static func apply_command(f: FighterState, cmd: FighterCommand, ctx: SimContext,
 			elif cmd.attack_dir != Dir.NONE or (f.buffered_attack_dir != Dir.NONE and tick <= f.buffered_until):
 				var buffered := cmd.attack_dir == Dir.NONE
 				var d := f.buffered_attack_dir if buffered else cmd.attack_dir
-				if f.stamina >= w.attack_stamina_cost:
+				if not ctx.rules.use_stamina or f.stamina >= w.attack_stamina_cost:
 					_start_windup(f, d, events)
 					f.release_queued = cmd.attack_release or buffered
 				elif cmd.attack_release or buffered:
@@ -62,8 +62,7 @@ static func apply_command(f: FighterState, cmd: FighterCommand, ctx: SimContext,
 static func _start_dodge(f: FighterState, cmd: FighterCommand, ctx: SimContext, events: Array) -> void:
 	var d := cmd.move
 	f.dodge_dir = d.normalized() if d.length() > 0.2 else -f.forward()
-	f.stamina = maxf(0.0, f.stamina - ctx.rules.dodge_stamina_cost)
-	f.stamina_wait = ctx.ticks(ctx.rules.stamina_regen_delay)
+	_spend_stamina(f, ctx.rules.dodge_stamina_cost, ctx)
 	f.attack_dir = Dir.NONE
 	f.block_dir = Dir.NONE
 	f.release_queued = false
@@ -104,6 +103,13 @@ static func _start_windup(f: FighterState, d: int, events: Array) -> void:
 	events.append({"type": &"attack_started", "id": f.id, "dir": d})
 
 
+static func _spend_stamina(f: FighterState, cost: float, ctx: SimContext) -> void:
+	if not ctx.rules.use_stamina:
+		return
+	f.stamina = maxf(0.0, f.stamina - cost)
+	f.stamina_wait = ctx.ticks(ctx.rules.stamina_regen_delay)
+
+
 ## Đếm thời gian trạng thái; chuyển WINDUP -> RELEASE khi đủ thời gian gồng.
 static func advance_timers(f: FighterState, ctx: SimContext, events: Array) -> void:
 	if not f.is_alive():
@@ -113,8 +119,7 @@ static func advance_timers(f: FighterState, ctx: SimContext, events: Array) -> v
 	match f.state:
 		S.WINDUP:
 			if f.release_queued and f.state_ticks >= ctx.ticks(w.windup_time):
-				f.stamina = maxf(0.0, f.stamina - w.attack_stamina_cost)
-				f.stamina_wait = ctx.ticks(ctx.rules.stamina_regen_delay)
+				_spend_stamina(f, w.attack_stamina_cost, ctx)
 				f.set_state(S.RELEASE)
 				events.append({"type": &"attack_released", "id": f.id, "dir": f.attack_dir})
 		S.DODGE:
