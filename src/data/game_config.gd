@@ -6,7 +6,8 @@ extends Resource
 @export var tick_rate: int = 30
 ## Số bot được tấn công cùng lúc khi 1 vs nhiều.
 @export var max_attackers_at_once: int = 1
-@export var arena_radius: float = 14.0
+## Bãi đấu không có rào: chỉ là giới hạn vô hình cho khỏi chạy ra khỏi mặt đất (mét).
+@export var arena_radius: float = 60.0
 ## Khoảng cách xuất phát giữa người chơi và địch.
 @export var spawn_distance: float = 6.0
 ## Khoảng nhìn để tự quay mặt về phía địch gần nhất (bot, và người chơi khi bật khoá mục tiêu).

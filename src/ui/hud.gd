@@ -123,9 +123,11 @@ func _draw() -> void:
 		return
 	var p := runner.player()
 	_draw_bar(Vector2(24, 104), Vector2(320, 22), p.hp / p.def.max_hp, Color(0.8, 0.15, 0.1))
-	if _stamina_flash > 0.0:
-		draw_rect(Rect2(Vector2(20, 128), Vector2(328, 20)), Color(1, 0.1, 0.05, _stamina_flash * 0.8))
-	_draw_bar(Vector2(24, 132), Vector2(320, 12), p.stamina / p.def.max_stamina, Color(0.95, 0.75, 0.2))
+	var stamina := runner.sim.ctx.rules.use_stamina
+	if stamina:
+		if _stamina_flash > 0.0:
+			draw_rect(Rect2(Vector2(20, 128), Vector2(328, 20)), Color(1, 0.1, 0.05, _stamina_flash * 0.8))
+		_draw_bar(Vector2(24, 132), Vector2(320, 12), p.stamina / p.def.max_stamina, Color(0.95, 0.75, 0.2))
 	draw_string(_font, Vector2(24, 96), p.def.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 
 	_draw_crosshair(p)
@@ -141,7 +143,8 @@ func _draw() -> void:
 			continue
 		var sp := cam.unproject_position(head)
 		_draw_bar(sp - Vector2(50, 0), Vector2(100, 9), f.hp / f.def.max_hp, Color(0.85, 0.2, 0.15))
-		_draw_bar(sp - Vector2(50, -11), Vector2(100, 5), f.stamina / f.def.max_stamina, Color(0.95, 0.75, 0.2))
+		if stamina:
+			_draw_bar(sp - Vector2(50, -11), Vector2(100, 5), f.stamina / f.def.max_stamina, Color(0.95, 0.75, 0.2))
 		if ConfigDB.input.show_attack_hint and f.state == S.WINDUP:
 			_draw_hint(CombatResolver.required_block_dir(f, p))
 

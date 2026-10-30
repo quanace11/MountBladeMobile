@@ -82,6 +82,8 @@ func _build_custom(parent: Control) -> void:
 		func(id): c.block_scheme = int(String(id)))
 	_row(_custom_box, "Trợ ngắm", {&"1": "Bật", &"0": "Tắt"}, &"1" if c.aim_assist else &"0",
 		func(id): c.aim_assist = id == &"1", [&"1", &"0"])
+	_row(_custom_box, "Tự đỡ đúng hướng", {&"1": "Bật", &"0": "Tắt"}, &"1" if c.auto_block else &"0",
+		func(id): c.auto_block = id == &"1", [&"1", &"0"])
 	_slider(_custom_box, "Độ nhạy xoay", 0.4, 2.5, 0.1, c.look_sensitivity, "x%.1f", func(v): c.look_sensitivity = v)
 	_slider(_custom_box, "Camera xa", 2.5, 6.0, 0.1, c.camera_distance, "%.1f m", func(v): c.camera_distance = v)
 	_slider(_custom_box, "Cỡ nút", 0.7, 1.4, 0.05, c.button_scale, "x%.2f", func(v): c.button_scale = v)

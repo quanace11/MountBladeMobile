@@ -57,11 +57,11 @@ func test_dodge_moves_and_avoids_hit() -> void:
 				missed = true
 	check(not hit and missed, "đang lăn thì đòn chém hụt")
 	check(b.pos.distance_to(start) > 2.0, "lăn đi được quãng dài (%.2f m)" % b.pos.distance_to(start))
-	check(b.stamina < b.def.max_stamina, "lăn tốn thể lực")
 
 
 func test_no_dodge_without_stamina() -> void:
 	var sim := make_sim()
+	_use_stamina(sim)
 	var ids := face_off(sim, "dao_tuong", "dao_tuong", 5.0)
 	var a := sim.state.get_fighter(ids[0])
 	a.stamina = 5.0

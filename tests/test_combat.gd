@@ -32,7 +32,7 @@ func test_correct_block_takes_no_damage() -> void:
 	var b := sim.state.get_fighter(r[1][1])
 	check(not (r[2] as Dictionary).is_empty(), "phải có sự kiện blocked")
 	check_eq(b.hp, b.def.max_hp, "B không mất máu")
-	check(b.stamina < b.def.max_stamina, "B mất thể lực khi đỡ")
+	check(b.stamina == b.def.max_stamina, "kiểu M&B2: đỡ không mất thể lực")
 	check_eq(sim.state.get_fighter(r[1][0]).state, FighterState.State.STAGGER, "A bị khựng")
 	check(sim.state.get_fighter(r[1][0]).recoil, "A khựng vì bị đỡ (vũ khí dội lại), không phải vì trúng đòn")
 	check_eq(b.state, FighterState.State.BLOCK, "B vẫn giữ thế đỡ, không bị khựng")
@@ -97,11 +97,23 @@ func test_attack_from_behind_cannot_be_blocked() -> void:
 
 func test_guard_breaks_without_stamina() -> void:
 	var sim := make_sim()
+	_use_stamina(sim)
 	var ids := face_off(sim, "dao_tuong", "dao_tuong", 1.5)
 	sim.state.get_fighter(ids[1]).stamina = 1.0
 	var fn := func(t: int) -> Dictionary:
 		return {ids[0]: cmd(Dir.RIGHT, t == 1), ids[1]: cmd(Dir.NONE, false, Dir.LEFT)}
 	check(not run_until(sim, fn, &"guard_broken").is_empty(), "hết thể lực thì bị phá thế")
+
+
+func test_no_stamina_attacks_never_refused() -> void:
+	# Mặc định không dùng thể lực: dù thanh thể lực về 0 vẫn chém, vẫn đỡ không bị phá thế.
+	var sim := make_sim()
+	var ids := face_off(sim, "dao_tuong", "dao_tuong", 1.5)
+	sim.state.get_fighter(ids[0]).stamina = 0.0
+	sim.state.get_fighter(ids[1]).stamina = 0.0
+	var fn := func(t: int) -> Dictionary:
+		return {ids[0]: cmd(Dir.RIGHT, t == 1), ids[1]: cmd(Dir.NONE, false, Dir.LEFT)}
+	check(not run_until(sim, fn, &"blocked").is_empty(), "hết thể lực vẫn chém và đỡ được")
 
 
 func test_shield_blocks_any_direction() -> void:

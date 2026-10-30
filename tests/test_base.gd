@@ -47,3 +47,9 @@ func run_until(sim: MatchSim, commands_fn: Callable, type: StringName, max_ticks
 			if e["type"] == type:
 				return e
 	return {}
+
+
+## Bật thể lực (mặc định tắt như Mount & Blade 2) cho test về thể lực.
+func _use_stamina(sim: MatchSim) -> void:
+	sim.ctx.rules = sim.ctx.rules.duplicate()
+	sim.ctx.rules.use_stamina = true

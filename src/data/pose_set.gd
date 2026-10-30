@@ -50,9 +50,24 @@ extends Resource
 @export var shield_block_pos := Vector3(-0.12, 1.38, -0.45)
 ## Tay trái cầm cán vũ khí hai tay: cách tay phải bao xa dọc cán (mét).
 @export var two_hand_grip: float = 0.4
-## Độ dài một sải chân (mét) và độ nhấc chân khi chạy.
-@export var stride_length: float = 1.2
-@export var foot_lift: float = 0.12
+## Bước chân như người: chân chạm đất thì đứng yên trên đất (lùi lại đúng bằng tốc độ thân), chân nhấc
+## thì vung lên phía trước theo vòng cung. Bàn chân đặt gót trước, nhón mũi khi rời đất.
+## Đi bộ: chân chạm đất lâu (walk_duty phần chu kỳ), bước ngắn. Chạy: chạm đất ngắn, có lúc cả hai chân
+## rời đất, bước dài, người đổ về trước, gối chùng hơn.
+## Chân xa nhất trước/sau hông khi đi và khi chạy (mét).
+@export var walk_foot_reach: float = 0.36
+@export var run_foot_reach: float = 0.5
+@export var walk_duty: float = 0.62
+@export var run_duty: float = 0.38
+## Tốc độ (m/s) coi là đi bộ hẳn và chạy hẳn; ở giữa thì pha trộn.
+@export var walk_speed: float = 1.5
+@export var run_speed: float = 4.0
+## Độ nhấc chân khi đi và khi chạy (mét).
+@export var foot_lift: float = 0.1
+@export var run_foot_lift: float = 0.2
+## Người đổ về trước khi chạy hết tốc (độ), hông hạ thấp khi chạy (mét).
+@export var run_lean_deg: float = 9.0
+@export var run_crouch: float = 0.05
 ## Thời gian ngã khi chết (giây).
 @export var death_fall_time: float = 0.6
 

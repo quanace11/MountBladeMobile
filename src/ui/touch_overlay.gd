@@ -1,6 +1,6 @@
 class_name TouchOverlay
 extends Control
-## Vẽ joystick, nút CHÉM, nút ĐỠ, nút LĂN, nét vuốt và vùng kéo xoay người. Chỉ đọc TouchController.
+## Vẽ joystick, nút CHÉM, nút ĐỠ, nét vuốt và vùng kéo xoay người. Chỉ đọc TouchController.
 
 var touch: TouchController
 var _font: Font
@@ -30,12 +30,6 @@ func _draw() -> void:
 	draw_arc(origin, cfg.joystick_radius, 0, TAU, 40, white, 2.0)
 	var knob := origin + touch.move_vector() * cfg.joystick_radius
 	draw_circle(knob, cfg.joystick_radius * 0.38, Color(1, 1, 1, 0.45 if touch.joy_index != -1 else 0.2))
-
-	var dc := touch.dodge_button_center()
-	var dr := touch.dodge_button_radius()
-	draw_circle(dc, dr, Color(0.25, 0.6, 0.3, 0.5 if touch.dodge_index != -1 else 0.28))
-	draw_arc(dc, dr, 0, TAU, 32, Color(1, 1, 1, 0.35), 2.0)
-	draw_string(_font, dc + Vector2(-dr, 7), "LĂN", HORIZONTAL_ALIGNMENT_CENTER, dr * 2.0, 20, Color(1, 1, 1, 0.9))
 
 	if touch.attack_button:
 		_draw_button(touch.attack_button_center(), touch.attack_button_radius(), "CHÉM", touch.attack_index != -1,
