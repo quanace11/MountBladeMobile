@@ -1,8 +1,11 @@
 class_name TouchController
 extends Node
-## Nhận chạm đa điểm, chia ra: nửa trái là joystick di chuyển, nửa phải là vùng chiến đấu,
-## và nút ĐỠ (khi dùng kiểu nút). Khi tự ngắm, phần trên của nửa phải là vùng kéo để xoay người.
-## Kết quả đọc qua move_vector(), combat, block_dir, consume_look().
+## Nhận chạm đa điểm. Nửa trái là joystick di chuyển. Nửa phải:
+## - Kiểu nút (mặc định): nút CHÉM và nút ĐỠ sát góc phải dưới, giữ và kéo để chọn hướng;
+##   khi tự ngắm thì mọi chỗ trống còn lại là vùng kéo để xoay người.
+## - Kiểu vuốt: vùng vuốt chém (GestureParser), nút ĐỠ hoặc vuốt gấp khúc;
+##   khi tự ngắm thì phần trên là vùng kéo để xoay người.
+## Kết quả đọc qua move_vector(), attack_dir(), consume_release(), block_dir(), consume_look().
 
 var cfg: InputConfig
 var combat: GestureParser
@@ -17,6 +20,16 @@ var block_index: int = -1
 var block_button_dir: int = Dir.NONE
 var block_touch_pos := Vector2.ZERO
 
+## Chém bằng nút CHÉM thay vì vuốt cả vùng.
+var attack_button := true
+var attack_index: int = -1
+var attack_button_dir: int = Dir.NONE
+var attack_touch_pos := Vector2.ZERO
+var _attack_release_dir: int = Dir.NONE
+## Hệ số cỡ nút, hệ số độ nhạy xoay (từ cài đặt người chơi).
+var button_scale := 1.0
+var look_mult := 1.0
+
 ## Bật vùng kéo xoay người (chế độ tự ngắm).
 var free_look := true
 var look_index: int = -1
@@ -30,12 +43,23 @@ func setup(p_cfg: InputConfig, scheme: int) -> void:
 
 
 func uses_block_button() -> bool:
-	return combat.scheme == InputConfig.BlockScheme.BUTTON
+	return attack_button or combat.scheme == InputConfig.BlockScheme.BUTTON
 
 
 func block_button_center() -> Vector2:
-	var size := get_viewport().get_visible_rect().size
-	return cfg.block_button_center * size
+	return cfg.block_button_center * get_viewport().get_visible_rect().size
+
+
+func block_button_radius() -> float:
+	return cfg.block_button_radius * button_scale
+
+
+func attack_button_center() -> Vector2:
+	return cfg.attack_button_center * get_viewport().get_visible_rect().size
+
+
+func attack_button_radius() -> float:
+	return cfg.attack_button_radius * button_scale
 
 
 func _input(event: InputEvent) -> void:
@@ -56,18 +80,25 @@ func _on_down(index: int, pos: Vector2) -> void:
 	var size := get_viewport().get_visible_rect().size
 	if pos.y < size.y * cfg.ignore_top_ratio:
 		return
-	if uses_block_button() and block_index == -1 and pos.distance_to(block_button_center()) <= cfg.block_button_radius:
+	var right_side := pos.x >= size.x * cfg.left_zone_ratio
+	if attack_button and attack_index == -1 and pos.distance_to(attack_button_center()) <= attack_button_radius():
+		attack_index = index
+		attack_touch_pos = pos
+		# Bấm là gồng bổ ngay; kéo đi hướng khác thì đổi hướng.
+		attack_button_dir = Dir.UP
+	elif uses_block_button() and block_index == -1 and pos.distance_to(block_button_center()) <= block_button_radius():
 		block_index = index
 		block_touch_pos = pos
 		block_button_dir = Dir.UP
-	elif pos.x < size.x * cfg.left_zone_ratio and joy_index == -1:
-		joy_index = index
-		joy_origin = pos
-		joy_pos = pos
-	elif free_look and look_index == -1 and pos.x >= size.x * cfg.left_zone_ratio and pos.y < size.y * cfg.look_zone_bottom_ratio:
+	elif not right_side:
+		if joy_index == -1:
+			joy_index = index
+			joy_origin = pos
+			joy_pos = pos
+	elif free_look and look_index == -1 and (attack_button or pos.y < size.y * cfg.look_zone_bottom_ratio):
 		look_index = index
 		look_pos = pos
-	elif combat_index == -1 and pos.x >= size.x * cfg.left_zone_ratio:
+	elif not attack_button and combat_index == -1:
 		combat_index = index
 		combat.touch_down(pos)
 
@@ -82,6 +113,11 @@ func _on_move(index: int, pos: Vector2) -> void:
 		var k := 720.0 / maxf(1.0, get_viewport().get_visible_rect().size.y)
 		_look_accum += (pos.x - look_pos.x) * k
 		look_pos = pos
+	elif index == attack_index:
+		attack_touch_pos = pos
+		var v := pos - attack_button_center()
+		if v.length() >= cfg.swipe_min_distance * 0.5:
+			attack_button_dir = Dir.from_screen_vector(v)
 	elif index == block_index:
 		block_touch_pos = pos
 		var v := pos - block_button_center()
@@ -95,6 +131,10 @@ func _on_up(index: int, pos: Vector2) -> void:
 	elif index == combat_index:
 		combat_index = -1
 		combat.touch_up(pos)
+	elif index == attack_index:
+		attack_index = -1
+		_attack_release_dir = attack_button_dir
+		attack_button_dir = Dir.NONE
 	elif index == block_index:
 		block_index = -1
 		block_button_dir = Dir.NONE
@@ -104,7 +144,7 @@ func _on_up(index: int, pos: Vector2) -> void:
 
 ## Góc xoay (radian, dương là quay phải) do kéo vùng xoay từ lần đọc trước.
 func consume_look() -> float:
-	var a := deg_to_rad(_look_accum * cfg.look_sensitivity_deg)
+	var a := deg_to_rad(_look_accum * cfg.look_sensitivity_deg * look_mult)
 	_look_accum = 0.0
 	return a
 
@@ -116,6 +156,26 @@ func move_vector() -> Vector2:
 	var v := (joy_pos - joy_origin) / cfg.joystick_radius
 	v = v.limit_length(1.0)
 	return Vector2.ZERO if v.length() < cfg.joystick_deadzone else v
+
+
+## Hướng đang gồng (nút CHÉM hoặc nét vuốt). NONE = không gồng.
+func attack_dir() -> int:
+	if attack_button_dir != Dir.NONE:
+		return attack_button_dir
+	return combat.attack_dir
+
+
+## Trả về hướng chém một lần sau khi người chơi nhả tay; NONE nếu chưa nhả.
+func consume_release() -> int:
+	if _attack_release_dir != Dir.NONE:
+		var d := _attack_release_dir
+		_attack_release_dir = Dir.NONE
+		return d
+	if combat.consume_release():
+		var d := combat.attack_dir
+		combat.clear_after_release()
+		return d
+	return Dir.NONE
 
 
 func block_dir() -> int:

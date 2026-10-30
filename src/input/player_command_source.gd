@@ -8,6 +8,10 @@ var keyboard := KeyboardController.new()
 ## Trả về góc yaw hiện tại của camera.
 var camera_yaw: Callable
 var free_aim := true
+## Đang chém mà có địch gần tâm ngắm thì quay nhẹ về phía địch đó.
+var aim_assist := false
+## Trợ ngắm: chỉ hút về địch nằm trong góc này quanh tâm ngắm (độ).
+const ASSIST_HALF_ANGLE_DEG := 35.0
 
 
 func _init(p_touch: TouchController, p_camera_yaw: Callable) -> void:
@@ -15,7 +19,7 @@ func _init(p_touch: TouchController, p_camera_yaw: Callable) -> void:
 	camera_yaw = p_camera_yaw
 
 
-func get_command(_state: MatchState) -> FighterCommand:
+func get_command(state: MatchState) -> FighterCommand:
 	var c := FighterCommand.new()
 	keyboard.poll_attack()
 
@@ -33,15 +37,36 @@ func get_command(_state: MatchState) -> FighterCommand:
 	if c.block_dir == Dir.NONE:
 		c.block_dir = keyboard.block_dir()
 
-	var g := touch.combat
 	var key_dir := keyboard.attack_dir()
-	if g.consume_release():
-		c.attack_dir = g.attack_dir
+	var released := touch.consume_release()
+	if released != Dir.NONE:
+		c.attack_dir = released
 		c.attack_release = true
-		g.clear_after_release()
 	elif keyboard.consume_release():
 		c.attack_dir = key_dir
 		c.attack_release = true
 	else:
-		c.attack_dir = g.attack_dir if g.attack_dir != Dir.NONE else key_dir
+		c.attack_dir = touch.attack_dir() if touch.attack_dir() != Dir.NONE else key_dir
+
+	if free_aim and aim_assist and c.attack_dir != Dir.NONE:
+		_assist(c, state)
 	return c
+
+
+func _assist(c: FighterCommand, state: MatchState) -> void:
+	var me := state.get_fighter(fighter_id)
+	if me == null:
+		return
+	var aim := Vector2(-sin(c.face_yaw), -cos(c.face_yaw))
+	var best_d := me.def.weapon.reach + 1.5
+	for o in state.fighters:
+		if o.team == me.team or not o.is_alive():
+			continue
+		var to := o.pos - me.pos
+		var d := to.length()
+		if d < 0.001 or d > best_d:
+			continue
+		if rad_to_deg(absf(aim.angle_to(to))) > ASSIST_HALF_ANGLE_DEG:
+			continue
+		best_d = d
+		c.face_yaw = FighterState.yaw_from_direction(to / d)

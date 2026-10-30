@@ -1,6 +1,6 @@
 class_name Hud
 extends Control
-## Thanh máu, thể lực, fps, nút menu, đổi kiểu đỡ, màn hình kết thúc.
+## Thanh máu, thể lực, fps, nút menu, đổi chế độ điều khiển, chấm tâm ngắm, màn hình kết thúc.
 
 const S := FighterState.State
 
@@ -8,8 +8,7 @@ var runner: MatchRunner
 var quality: QualityManager
 var _font: Font
 var _fps_label: Label
-var _scheme_btn: Button
-var _aim_btn: Button
+var _mode_btn: Button
 var _end_panel: PanelContainer
 var _end_label: Label
 
@@ -42,15 +41,10 @@ func setup(p_runner: MatchRunner, p_quality: QualityManager) -> void:
 	_fps_label.add_theme_font_size_override("font_size", 18)
 	top.add_child(_fps_label)
 
-	_scheme_btn = _button("")
-	_scheme_btn.pressed.connect(_toggle_scheme)
-	top.add_child(_scheme_btn)
-	_update_scheme_label()
-
-	_aim_btn = _button("")
-	_aim_btn.pressed.connect(_toggle_aim)
-	top.add_child(_aim_btn)
-	_update_aim_label()
+	_mode_btn = _button("")
+	_mode_btn.pressed.connect(_cycle_mode)
+	top.add_child(_mode_btn)
+	_update_mode_label()
 
 	_build_end_panel()
 	EventBus.match_over.connect(_on_match_over)
@@ -70,26 +64,15 @@ func _button(text: String) -> Button:
 	return b
 
 
-func _toggle_scheme() -> void:
-	Game.block_scheme = InputConfig.BlockScheme.CHEVRON if Game.block_scheme == InputConfig.BlockScheme.BUTTON else InputConfig.BlockScheme.BUTTON
-	runner.touch.combat.scheme = Game.block_scheme
+func _cycle_mode() -> void:
+	Game.control_mode = (Game.control_mode + 1) % ControlPrefs.Mode.size()
+	runner.apply_controls()
 	Game.save_settings()
-	_update_scheme_label()
+	_update_mode_label()
 
 
-func _update_scheme_label() -> void:
-	_scheme_btn.text = "Đỡ: nút" if Game.block_scheme == InputConfig.BlockScheme.BUTTON else "Đỡ: vuốt gấp"
-
-
-func _toggle_aim() -> void:
-	Game.free_aim = not Game.free_aim
-	runner.set_free_aim(Game.free_aim)
-	Game.save_settings()
-	_update_aim_label()
-
-
-func _update_aim_label() -> void:
-	_aim_btn.text = "Ngắm: tự xoay" if Game.free_aim else "Ngắm: khoá"
+func _update_mode_label() -> void:
+	_mode_btn.text = ControlPrefs.mode_name(Game.control_mode)
 
 
 func _build_end_panel() -> void:
@@ -132,6 +115,8 @@ func _draw() -> void:
 	_draw_bar(Vector2(24, 132), Vector2(320, 12), p.stamina / p.def.max_stamina, Color(0.95, 0.75, 0.2))
 	draw_string(_font, Vector2(24, 96), p.def.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 
+	_draw_crosshair(p)
+
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
@@ -146,6 +131,14 @@ func _draw() -> void:
 		_draw_bar(sp - Vector2(50, -11), Vector2(100, 5), f.stamina / f.def.max_stamina, Color(0.95, 0.75, 0.2))
 		if ConfigDB.input.show_attack_hint and f.state == S.WINDUP:
 			_draw_hint(CombatResolver.required_block_dir(f, p))
+
+
+## Chấm tâm khung nhìn: hướng người chơi đang quay mặt tới. Đỏ khi có địch trong tầm chém.
+func _draw_crosshair(p: FighterState) -> void:
+	var c := get_viewport_rect().size * 0.5
+	var in_reach := p.is_alive() and CombatResolver.find_target(p, runner.sim.state.fighters) != null
+	draw_circle(c, 7.0, Color(1, 1, 1, 0.75))
+	draw_circle(c, 5.0, Color(0.9, 0.1, 0.05) if in_reach else Color(0, 0, 0, 0.9))
 
 
 func _draw_bar(pos: Vector2, size: Vector2, ratio: float, col: Color) -> void:
