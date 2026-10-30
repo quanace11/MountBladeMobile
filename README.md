@@ -49,11 +49,16 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 ## Model 3D
 
-Tướng của người chơi dùng model `assets/models/tuong/tuong.fbx` (khai báo ở `config/models/tuong.tres`,
+Tướng của người chơi dùng model `assets/models/tuong/tuong_textured.scn` (khai báo ở `config/models/tuong.tres`,
 gắn vào `player_model` trong `config/game_config.tres`). Model cần khung xương chuẩn UE5 (`pelvis`, `spine_02..04`,
 `upperarm_r`, `lowerarm_r`, `hand_r`, `thigh_l`, `calf_l`, `foot_l`...), không cần hoạt cảnh: `SkinnedRig` uốn xương
 theo đúng các khớp mà thân dựng bằng khối đang dùng. Vũ khí, khiên vẫn dựng bằng khối. Ảnh texture đặt vào
 `albedo` / `normal` của `config/models/tuong.tres`; để trống thì model một màu.
+
+Tripo xuất hai file: `tuong.fbx` có khung xương nhưng lưới bị dựng lại nên mất ảnh màu, `tuongdau.fbx` có ảnh
+màu nhưng không có xương. `tools/bake_textured_model.gd` ghép lưới có ảnh vào khung xương (mỗi đỉnh lấy trọng số
+xương từ vài đỉnh gần nhất của bản rig) và lưu ra `tuong_textured.scn`. Đổi model thì chạy lại:
+`godot --headless --path . -s tools/bake_textured_model.gd`.
 
 ## Cấu trúc
 
