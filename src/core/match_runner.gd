@@ -52,6 +52,8 @@ func _ready() -> void:
 	vfx = VfxPool.new()
 	add_child(vfx)
 	vfx.setup(quality.max_vfx)
+	var fwd := Vector3(-sin(camera_rig.yaw), 0.0, -cos(camera_rig.yaw))
+	vfx.warm_up(views[player_id].global_position + fwd * 3.0 + Vector3.UP)
 
 	var audio := AudioDirector.new()
 	add_child(audio)
