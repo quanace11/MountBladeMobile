@@ -62,6 +62,17 @@ var _gait_amount := 0.0
 var _run := 0.0
 var _local_vel := Vector2.ZERO
 var _death_t := 0.0
+## Bị chém trúng (như Bannerlord): người giật theo hướng lưỡi vũ khí đi rồi hồi lại.
+## (ngả, xoay, nghiêng) của thân trên (radian) và độ xô của cả người (mét, toạ độ thân).
+var _react := Vector3.ZERO
+var _react_push := Vector3.ZERO
+## Hướng ngã khi chết (toạ độ thân: x phải, z sau).
+var _fall_dir := Vector3(0, 0, 1)
+## Vũ khí rơi khỏi tay khi chết.
+var _dropped: Node3D
+var _drop_vel := Vector3.ZERO
+var _drop_spin := Vector3.ZERO
+var _drop_landed := false
 var _twist := 0.0
 var _lean := 0.0
 
@@ -410,15 +421,18 @@ func sync(cur: FighterState, prev_pos: Vector2, prev_yaw: float, alpha: float, d
 	position = Vector3(p.x, 0.0, p.y)
 	rotation.y = lerp_angle(prev_yaw, cur.yaw, alpha)
 
+	var rk := 1.0 - exp(-7.0 * delta)
+	_react = _react.lerp(Vector3.ZERO, rk)
+	_react_push = _react_push.lerp(Vector3.ZERO, rk)
 	if cur.state == S.DEAD:
-		_death_t = minf(1.0, _death_t + delta / maxf(0.01, poses.death_fall_time))
-		_body.rotation.x = lerpf(0.0, deg_to_rad(82.0), ease(_death_t, 0.4))
 		_gait_amount = 0.0
+		_update_gait(cur, delta)
+		_update_death(delta)
 	else:
 		_update_roll(cur, alpha)
 		_update_hand_pose(cur, delta)
 		_update_torso(cur, delta)
-	_update_gait(cur, delta)
+		_update_gait(cur, delta)
 	_update_limbs()
 
 	_jolt = maxf(0.0, _jolt - delta * 6.0)
@@ -432,6 +446,67 @@ func sync(cur: FighterState, prev_pos: Vector2, prev_yaw: float, alpha: float, d
 ## Bị chém trúng: giáp chớp sáng.
 func flash() -> void:
 	_flash = 1.0
+
+
+## Bị chém trúng: blow là hướng lưỡi vũ khí đi (toạ độ thế giới). Đòn từ trước thì ngửa ra sau,
+## đòn ngang thì nghiêng, xoay người theo hướng chém, xô lùi nửa bước.
+func hit_react(blow: Vector3, strength: float = 1.0) -> void:
+	var l := global_transform.basis.inverse() * blow
+	l.y = 0.0
+	if l.length() < 0.001:
+		return
+	l = l.normalized()
+	_react = Vector3(l.z * 0.5, -l.x * 0.35, -l.x * 0.4) * strength
+	_react_push = l * 0.14 * strength
+
+
+## Chết: khuỵu gối rồi đổ theo hướng đòn chém, vũ khí văng khỏi tay.
+func die(blow: Vector3) -> void:
+	var l := global_transform.basis.inverse() * blow
+	l.y = 0.0
+	_fall_dir = l.normalized() if l.length() > 0.01 else Vector3(0, 0, 1)
+	_death_t = 0.0
+	_drop_weapon()
+
+
+func _drop_weapon() -> void:
+	if _weapon == null or _dropped != null or get_parent() == null:
+		return
+	var g := _weapon.global_transform
+	_weapon.get_parent().remove_child(_weapon)
+	get_parent().add_child(_weapon)
+	_weapon.global_transform = g
+	_dropped = _weapon
+	var side := Vector3(randf_range(-0.4, 0.4), 0, 0) + _fall_dir * 0.6
+	_drop_vel = global_transform.basis * Vector3(side.x, 1.6, side.z)
+	_drop_spin = Vector3(randf_range(2.0, 4.0), randf_range(-2.0, 2.0), randf_range(-3.0, 3.0))
+
+
+## Ngã: 0..0,25 khuỵu gối, 0,25..1 đổ người (nhanh dần như rơi), sau đó nảy nhẹ khi chạm đất.
+func _update_death(delta: float) -> void:
+	_death_t += delta / maxf(0.01, poses.death_fall_time * 1.5)
+	var buckle := smoothstep(0.0, 0.25, _death_t)
+	var f := clampf((_death_t - 0.2) / 0.8, 0.0, 1.0)
+	var angle := deg_to_rad(86.0) * f * f
+	if _death_t > 1.0:
+		angle -= deg_to_rad(6.0) * sin(PI * minf(1.0, (_death_t - 1.0) / 0.25)) * maxf(0.0, 1.0 - (_death_t - 1.0))
+	var axis := Vector3.UP.cross(_fall_dir).normalized()
+	_body.transform = Transform3D(Basis(axis, angle) * Basis.from_scale(_body_scale), Vector3(0, -0.12 * buckle * (1.0 - f), 0))
+	_pelvis.position.y -= 0.32 * buckle * (1.0 - f * 0.6)
+	_chest.rotation = Vector3(0.4 * buckle, 0.0, 0.0)
+	_head.rotation = Vector3(0.5 * buckle, 0.0, 0.0)
+	_hand.position = _hand.position.lerp(Vector3(0.28, 0.7, -0.15), 1.0 - exp(-6.0 * delta))
+	_left_hand_target = _left_hand_target.lerp(Vector3(-0.28, 0.7, -0.1), 1.0 - exp(-6.0 * delta))
+	if _dropped and not _drop_landed:
+		_drop_vel.y -= 9.8 * delta
+		_dropped.global_position += _drop_vel * delta
+		_dropped.rotate_object_local(Vector3.RIGHT, _drop_spin.x * delta)
+		_dropped.rotate_object_local(Vector3.FORWARD, _drop_spin.z * delta)
+		if _dropped.global_position.y <= 0.06 and _drop_vel.y < 0.0:
+			_drop_landed = true
+			var p := _dropped.global_position
+			# Nằm phẳng trên đất, giữ hướng xoay ngang hiện tại.
+			_dropped.global_transform = Transform3D(Basis(Vector3.UP, _dropped.global_rotation.y) * Basis(Vector3.RIGHT, PI * 0.5), Vector3(p.x, 0.06, p.z))
 
 
 ## Đỡ được đòn: tay cầm vũ khí bị đẩy lùi một chút rồi giữ lại thế đỡ, không chớp như bị trúng.
@@ -475,7 +550,7 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 ## Lăn né: cả người lộn một vòng quanh hông theo hướng lăn.
 func _update_roll(cur: FighterState, alpha: float) -> void:
 	if cur.state != S.DODGE:
-		_body.transform = Transform3D(Basis.from_scale(_body_scale), Vector3.ZERO)
+		_body.transform = Transform3D(Basis.from_scale(_body_scale), _react_push)
 		return
 	var t := clampf((cur.state_ticks + alpha) / maxf(1.0, cur.state_duration), 0.0, 1.0)
 	var d := Basis(Vector3.UP, -rotation.y) * Vector3(cur.dodge_dir.x, 0.0, cur.dodge_dir.y)
@@ -521,8 +596,8 @@ func _update_torso(cur: FighterState, delta: float) -> void:
 	var k := 1.0 - exp(-poses.blend_speed * delta)
 	_twist = lerpf(_twist, twist, k)
 	_lean = lerpf(_lean, lean, k)
-	_chest.rotation = Vector3(_lean, _twist, 0.0)
-	_head.rotation = Vector3(-_lean * 0.5, -_twist * 0.6, 0.0)
+	_chest.rotation = Vector3(_lean + _react.x, _twist + _react.y, _react.z)
+	_head.rotation = Vector3(-_lean * 0.5 + _react.x * 0.6, -_twist * 0.6, -_react.z * 0.3)
 
 
 ## Bước chân: tính theo vận tốc trong hệ toạ độ của nhân vật nên đi ngang, đi lùi đều đúng chân.
@@ -542,7 +617,8 @@ func _update_gait(cur: FighterState, delta: float) -> void:
 	var bob := lerpf(0.025, 0.045, _run) * (0.5 + 0.5 * cos(2.0 * _gait - PI * _duty())) * _gait_amount
 	_pelvis.position.y = HIP_HEIGHT - 0.03 - poses.run_crouch * _run * _gait_amount - bob
 	# Chạy thì người đổ về trước.
-	_chest.rotation.x = _lean - deg_to_rad(poses.run_lean_deg) * _run * _gait_amount * _forwardness()
+	if cur.state != S.DEAD:
+		_chest.rotation.x = _lean + _react.x - deg_to_rad(poses.run_lean_deg) * _run * _gait_amount * _forwardness()
 	if _cape_mat:
 		_cape_mat.set_shader_parameter("sway", clampf(-_local_vel.y * 0.07, -0.1, 0.4))
 
@@ -625,7 +701,7 @@ func _update_limbs() -> void:
 		_shield.rotation = Vector3(0.1, _twist * 0.5, 0.0)
 
 	if _rig:
-		_rig.pose(HIP_HEIGHT - _pelvis.position.y, _pelvis.rotation.y, Vector3(_chest.rotation.x, _twist, 0.0), Vector3(-_lean * 0.5, -_twist * 0.6, 0.0),
+		_rig.pose(HIP_HEIGHT - _pelvis.position.y, _pelvis.rotation.y, _chest.rotation, _head.rotation,
 			{1: _hand.position, -1: l_hand}, {1: Vector3(0.4, -0.6, 0.5), -1: Vector3(-0.4, -0.6, 0.5)}, feet, knee_poles, foot_pitch)
 
 

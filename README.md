@@ -28,8 +28,8 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - **Tay phải**: nút **CHÉM** sát góc phải dưới: giữ và kéo về hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó),
   nhả tay để chém; bấm không kéo là bổ. Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
   Nhả nút khi đang chém dở hoặc đang thu vũ khí thì game nhớ lệnh và chém tiếp ngay khi rảnh (chém liên hoàn).
-- Nút **ĐỠ** bên trái nút CHÉM: giữ là giơ đỡ ngay, tự quay về phía đòn đang tới (tuỳ chọn *Tự đỡ đúng hướng*,
-  như "Block direction: Automatic" của Bannerlord). Tắt tuỳ chọn đó thì kéo nút về phía đòn đang đến.
+- Nút **ĐỠ** bên trái nút CHÉM: giữ và kéo về phía đòn đang đến. Bật *Tự đỡ đúng hướng* trong *Tự chỉnh*
+  (như "Block direction: Automatic" của Bannerlord) thì chỉ cần giữ, nhân vật tự đỡ về phía đòn đang tới.
   Vừa chém xong, hoặc vũ khí vừa bị đỡ dội lại, vẫn giơ đỡ được ngay; chỉ khi bị chém trúng mới phải chờ.
   Kiểu vuốt cả vùng (trong *Tự chỉnh*) đỡ bằng nút ĐỠ hoặc nét gấp khúc `^` `<` `>` `v`, giữ ngón tay là giữ thế đỡ.
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
@@ -40,6 +40,11 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
   Muốn bật lại thể lực thì đặt `use_stamina = true` trong `config/combat_rules.tres`.
   Đòn từ sau lưng hoặc bên sườn không đỡ được.
 - Chém trúng địch đầu tiên trong tầm và cung chém; ngoài tầm thì hụt.
+- Bị chém trúng (như M&B2): người giật theo hướng lưỡi vũ khí, xô lùi nửa bước, máu phụt theo hướng chém và
+  văng xuống đất, có tiếng rên. Người chơi trúng đòn thì viền màn hình chớp đỏ, máu thấp thì viền đỏ mờ luôn hiện.
+- Chết: khuỵu gối rồi đổ theo hướng đòn, vũ khí văng khỏi tay, vũng máu loang dần, tiếng hét và tiếng thân ngã.
+  Dòng báo kiểu Bannerlord: "Gây 36 sát thương." dưới thanh máu, "Bạn đã hạ ..." ở góc phải; bảng kết thúc
+  hiện sau 2,5 giây cho thấy người cuối cùng ngã.
 - Bị chém trúng khi đang gồng hoặc đang vung thì khựng và mất đòn (như Mount & Blade). Hai người chém trúng nhau
   cùng lúc thì cả hai đòn đều tính.
 - Lao tới khi chém thì đòn mạnh hơn (tối đa ×1,35), vừa lùi vừa chém thì yếu hơn (tối thiểu ×0,8), như Mount & Blade.
@@ -51,16 +56,20 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 ## Model 3D
 
-Tướng của người chơi dùng model `assets/models/tuong/tuong_textured.scn` (khai báo ở `config/models/tuong.tres`,
+Tướng của người chơi dùng model `assets/models/tuongtrang/tuongtrang.scn` (khai báo ở `config/models/tuongtrang.tres`,
 gắn vào `player_model` trong `config/game_config.tres`). Model cần khung xương chuẩn UE5 (`pelvis`, `spine_02..04`,
 `upperarm_r`, `lowerarm_r`, `hand_r`, `thigh_l`, `calf_l`, `foot_l`...), không cần hoạt cảnh: `SkinnedRig` uốn xương
-theo đúng các khớp mà thân dựng bằng khối đang dùng. Vũ khí, khiên vẫn dựng bằng khối. Ảnh texture đặt vào
-`albedo` / `normal` của `config/models/tuong.tres`; để trống thì model một màu.
+theo đúng các khớp mà thân dựng bằng khối đang dùng. Vũ khí, khiên vẫn dựng bằng khối. Ảnh màu và ảnh pháp tuyến
+khai trong `albedo` / `normal` của file `.tres`; `height` là chiều cao model trong file để phóng cho cao 1,8 m.
 
-Tripo xuất hai file: `tuong.fbx` có khung xương nhưng lưới bị dựng lại nên mất ảnh màu, `tuongdau.fbx` có ảnh
-màu nhưng không có xương. `tools/bake_textured_model.gd` ghép lưới có ảnh vào khung xương (mỗi đỉnh lấy trọng số
-xương từ vài đỉnh gần nhất của bản rig) và lưu ra `tuong_textured.scn`. Đổi model thì chạy lại:
-`godot --headless --path . -s tools/bake_textured_model.gd`.
+Thêm model mới (xuất từ Character Creator: Target *Unreal (UE5 Skeleton)*, *Character only*, ảnh 2048, *Embed Texture*):
+1. Chép file `.fbx` vào `assets/models/<tên>/`, mở Godot một lần để nhập (ảnh nhúng được tách ra `<tên>_0.png`, `_1.png`).
+2. Gói thành cảnh gọn: `godot --headless --path . -s tools/pack_model.gd -- res://assets/models/<tên>/<tên>.fbx res://assets/models/<tên>/<tên>.scn`
+   (bỏ hình biến dạng mặt và hoạt cảnh, tạo lại LOD; file fbx 58 MB còn 1,5 MB). File `.fbx` gốc không đưa lên repo.
+3. Tạo `config/models/<tên>.tres` như `tuongtrang.tres` và trỏ `player_model` tới nó.
+
+Model cũ `tuong` (Tripo) vẫn còn: bản rig mất ảnh màu nên `tools/bake_textured_model.gd` ghép lưới có ảnh
+(`tuongdau.fbx`) vào khung xương của bản rig thành `tuong_textured.scn`.
 
 ## Cấu trúc
 

@@ -11,7 +11,7 @@ var free_aim := true
 ## Đang chém mà có địch gần tâm ngắm thì quay nhẹ về phía địch đó.
 var aim_assist := false
 ## Giữ ĐỠ thì tự giơ đỡ về phía đòn của địch đang chém mình.
-var auto_block := true
+var auto_block := false
 ## Trợ ngắm: chỉ hút về địch nằm trong góc này quanh tâm ngắm (độ).
 const ASSIST_HALF_ANGLE_DEG := 35.0
 

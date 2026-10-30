@@ -13,6 +13,14 @@ var _end_panel: PanelContainer
 var _end_label: Label
 ## Thanh thể lực nháy đỏ khi bấm chém/lăn mà không đủ thể lực.
 var _stamina_flash := 0.0
+## Viền đỏ khi bị chém trúng; máu thấp thì viền đỏ mờ luôn hiện.
+var _hurt_flash := 0.0
+var _vignette: GradientTexture2D
+## Dòng báo như Bannerlord: "Gây 45 sát thương." dưới thanh máu, "A đã hạ B" ở góc phải trên.
+## Mỗi dòng: [chữ, màu, thời gian còn lại].
+var _damage_log: Array = []
+var _kill_feed: Array = []
+const LOG_TIME := 3.5
 
 
 func setup(p_runner: MatchRunner, p_quality: QualityManager) -> void:
@@ -61,8 +69,33 @@ func _exit_tree() -> void:
 
 
 func _on_sim_event(e: Dictionary) -> void:
-	if e["type"] == &"no_stamina" and e["id"] == runner.player_id:
-		_stamina_flash = 1.0
+	var me := runner.player_id
+	match e["type"]:
+		&"no_stamina":
+			if e["id"] == me:
+				_stamina_flash = 1.0
+		&"hit":
+			var dmg := roundi(float(e.get("damage", 0.0)))
+			if e["target"] == me:
+				_hurt_flash = 1.0
+				_push(_damage_log, "Nhận %d sát thương." % dmg, Color(1.0, 0.55, 0.5), 4)
+			elif e["id"] == me:
+				_push(_damage_log, "Gây %d sát thương." % dmg, Color(1.0, 0.95, 0.8), 4)
+		&"died":
+			var by := runner.sim.state.get_fighter(e.get("by", -1))
+			var dead := runner.sim.state.get_fighter(e["id"])
+			if dead == null:
+				return
+			var killer := "?" if by == null else ("Bạn" if by.id == me else by.def.display_name)
+			var victim := "bạn" if dead.id == me else dead.def.display_name
+			var col := Color(0.6, 1.0, 0.6) if by != null and by.team == runner.player().team else Color(1.0, 0.5, 0.45)
+			_push(_kill_feed, "%s đã hạ %s" % [killer, victim], col, 5)
+
+
+func _push(list: Array, text: String, color: Color, keep: int) -> void:
+	list.push_front([text, color, LOG_TIME])
+	if list.size() > keep:
+		list.pop_back()
 
 
 func _button(text: String) -> Button:
@@ -105,7 +138,14 @@ func _build_end_panel() -> void:
 	box.add_child(menu)
 
 
+## Chờ một lúc cho thấy người cuối cùng ngã xuống rồi mới hiện bảng kết thúc.
+const END_PANEL_DELAY := 2.5
+
+
 func _on_match_over(winner_team: int) -> void:
+	await get_tree().create_timer(END_PANEL_DELAY).timeout
+	if not is_inside_tree():
+		return
 	_end_label.text = "THẮNG!" if winner_team == 0 else "THUA"
 	_end_panel.visible = true
 	_end_panel.reset_size()
@@ -114,6 +154,12 @@ func _on_match_over(winner_team: int) -> void:
 
 func _process(delta: float) -> void:
 	_stamina_flash = maxf(0.0, _stamina_flash - delta * 2.5)
+	_hurt_flash = maxf(0.0, _hurt_flash - delta * 2.2)
+	for list in [_damage_log, _kill_feed]:
+		for line in list:
+			line[2] -= delta
+		while not list.is_empty() and list.back()[2] <= 0.0:
+			list.pop_back()
 	_fps_label.text = "%d fps  ·  %d%%" % [Engine.get_frames_per_second(), roundi(quality.scale * 100.0)]
 	queue_redraw()
 
@@ -122,6 +168,7 @@ func _draw() -> void:
 	if runner == null:
 		return
 	var p := runner.player()
+	_draw_vignette(p)
 	_draw_bar(Vector2(24, 104), Vector2(320, 22), p.hp / p.def.max_hp, Color(0.8, 0.15, 0.1))
 	var stamina := runner.sim.ctx.rules.use_stamina
 	if stamina:
@@ -131,6 +178,8 @@ func _draw() -> void:
 	draw_string(_font, Vector2(24, 96), p.def.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 
 	_draw_crosshair(p)
+	_draw_log(_damage_log, Vector2(24, 172), HORIZONTAL_ALIGNMENT_LEFT)
+	_draw_log(_kill_feed, Vector2(get_viewport_rect().size.x - 24, 96), HORIZONTAL_ALIGNMENT_RIGHT)
 
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
@@ -173,3 +222,36 @@ func _draw_hint(dir: int) -> void:
 		Dir.LEFT: pos = c + Vector2(-size.x * 0.2, 0)
 		Dir.RIGHT: pos = c + Vector2(size.x * 0.2, 0)
 	draw_circle(pos, 18, Color(1, 0.2, 0.1, 0.7))
+
+
+## Viền đỏ quanh màn hình: chớp khi bị trúng, mờ mờ khi còn dưới 35% máu.
+func _draw_vignette(p: FighterState) -> void:
+	var low := clampf(1.0 - p.hp / (p.def.max_hp * 0.35), 0.0, 1.0) * 0.45 if p.is_alive() else 0.0
+	var a := maxf(_hurt_flash * 0.85, low)
+	if a <= 0.01:
+		return
+	if _vignette == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(0.6, 0.0, 0.0, 0.0))
+		g.set_color(1, Color(0.6, 0.0, 0.0, 0.9))
+		g.add_point(0.55, Color(0.6, 0.0, 0.0, 0.0))
+		_vignette = GradientTexture2D.new()
+		_vignette.gradient = g
+		_vignette.fill = GradientTexture2D.FILL_RADIAL
+		_vignette.fill_from = Vector2(0.5, 0.5)
+		_vignette.fill_to = Vector2(1.05, 0.5)
+		_vignette.width = 64
+		_vignette.height = 64
+	draw_texture_rect(_vignette, Rect2(Vector2.ZERO, get_viewport_rect().size), false, Color(1, 1, 1, a))
+
+
+## Các dòng báo, dòng mới nhất ở trên, mờ dần trong giây cuối.
+func _draw_log(list: Array, origin: Vector2, align: HorizontalAlignment) -> void:
+	var y := origin.y
+	for line in list:
+		var col: Color = line[1]
+		col.a = clampf(float(line[2]), 0.0, 1.0)
+		var x := origin.x - 420.0 if align == HORIZONTAL_ALIGNMENT_RIGHT else origin.x
+		draw_string_outline(_font, Vector2(x, y), line[0], align, 420.0, 18, 4, Color(0, 0, 0, col.a * 0.7))
+		draw_string(_font, Vector2(x, y), line[0], align, 420.0, 18, col)
+		y += 24.0

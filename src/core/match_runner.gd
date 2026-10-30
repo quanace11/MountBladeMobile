@@ -158,11 +158,39 @@ func _on_event(e: Dictionary) -> void:
 			(views[e["target"]] as FighterView).jolt(1.6)
 			_shake_if_player(e, ConfigDB.game.camera_shake_hit)
 		&"hit":
-			vfx.blood(_contact_point(e))
-			(views[e["target"]] as FighterView).flash()
+			var blow := _blow_dir(e["id"], e["target"], int(e["dir"]))
+			var strength := clampf(float(e.get("damage", 30.0)) / 30.0, 0.5, 2.0)
+			vfx.blood(_contact_point(e), blow, strength)
+			var tv := views[e["target"]] as FighterView
+			tv.flash()
+			tv.hit_react(blow, strength)
 			_shake_if_player(e, ConfigDB.game.camera_shake_hit)
+		&"died":
+			var by: int = e.get("by", -1)
+			var dead := sim.state.get_fighter(e["id"])
+			var killer := sim.state.get_fighter(by)
+			var blow := _blow_dir(by, e["id"], killer.attack_dir if killer else Dir.UP) if killer else Vector3.BACK
+			(views[e["id"]] as FighterView).die(blow)
+			# Vũng máu loang dần dưới chỗ thân ngã xuống.
+			var at := dead.pos + Vector2(blow.x, blow.z).normalized() * 0.9
+			vfx.splat(at, 1.6, 2.0)
 		&"match_over":
 			EventBus.match_over.emit(e["winner"])
+
+
+## Hướng lưỡi vũ khí đi khi trúng (thế giới): từ người chém về người bị chém; chém ngang thì
+## lệch thêm sang bên mà lưỡi quét tới (chém từ phải quét sang trái của người chém).
+func _blow_dir(attacker_id: int, target_id: int, dir: int) -> Vector3:
+	var a := sim.state.get_fighter(attacker_id)
+	var t := sim.state.get_fighter(target_id)
+	if a == null or t == null:
+		return Vector3.BACK
+	var v := (t.pos - a.pos).normalized()
+	match dir:
+		Dir.RIGHT: v -= a.right() * 0.9
+		Dir.LEFT: v += a.right() * 0.9
+	v = v.normalized()
+	return Vector3(v.x, 0.0, v.y)
 
 
 func _contact_point(e: Dictionary) -> Vector3:
