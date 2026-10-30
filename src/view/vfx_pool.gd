@@ -1,7 +1,8 @@
 class_name VfxPool
 extends Node3D
 ## Đỡ: chớp sáng + tia lửa văng ở chỗ hai binh khí chạm nhau. Trúng: máu.
-## Tạo sẵn và dùng lại, không tạo mới giữa trận.
+## Tạo sẵn và dùng lại, không tạo mới giữa trận. Không dùng đèn động: trên điện thoại (GL Compatibility)
+## mỗi đèn bật lên bắt mọi vật quanh đó vẽ thêm một lượt, và lần đầu bật còn phải dịch lại shader (giật hình).
 
 const FLASH_TIME := 0.18
 
@@ -10,9 +11,6 @@ var _blood: Array[CPUParticles3D] = []
 var _flashes: Array[MeshInstance3D] = []
 var _flash_t: Array[float] = []
 var _flash_size: Array[float] = []
-var _light: OmniLight3D
-var _light_t := 0.0
-var _light_energy := 0.0
 var _next_spark := 0
 var _next_blood := 0
 var _next_flash := 0
@@ -26,12 +24,6 @@ func setup(max_vfx: int) -> void:
 		_flashes.append(_make_flash())
 		_flash_t.append(0.0)
 		_flash_size.append(1.0)
-	_light = OmniLight3D.new()
-	_light.light_color = Color(1.0, 0.85, 0.55)
-	_light.omni_range = 4.0
-	_light.light_energy = 0.0
-	_light.visible = false
-	add_child(_light)
 
 
 func _make(color: Color, amount: int, speed: float) -> CPUParticles3D:
@@ -141,11 +133,25 @@ func clash(at: Vector3, strength: float = 1.0, tint: Color = Color(1.0, 0.85, 0.
 	_flash_t[i] = FLASH_TIME * (1.0 + 0.5 * (strength - 1.0))
 	_flash_size[i] = 1.3 * strength
 
-	_light.global_position = at
-	_light.light_color = tint
-	_light_energy = 2.5 * strength
-	_light_t = 0.12
-	_light.visible = true
+
+## Vẽ thử mỗi hiệu ứng một lần lúc vào trận (hạt bé tí, chớp sáng trong suốt) để shader được dịch sẵn,
+## không bị khựng hình ở lần đỡ hay lần chém trúng đầu tiên. at: một điểm camera đang nhìn thấy.
+func warm_up(at: Vector3) -> void:
+	var played: Array[CPUParticles3D] = [_sparks[0], _blood[0]]
+	var sizes := []
+	for p in played:
+		sizes.append(Vector2(p.scale_amount_min, p.scale_amount_max))
+		p.scale_amount_min = 0.001
+		p.scale_amount_max = 0.001
+	clash(at, 1.0, Color(1, 1, 1, 0))
+	blood(at)
+	_next_spark = 0
+	_next_blood = 0
+	_next_flash = 0
+	await get_tree().create_timer(0.6).timeout
+	for i in played.size():
+		played[i].scale_amount_min = sizes[i].x
+		played[i].scale_amount_max = sizes[i].y
 
 
 func blood(at: Vector3) -> void:
@@ -171,8 +177,3 @@ func _process(delta: float) -> void:
 		var k := _flash_t[i] / FLASH_TIME
 		f.scale = Vector3.ONE * _flash_size[i] * (1.4 - 0.6 * k)
 		f.transparency = 1.0 - clampf(k, 0.0, 1.0)
-	if _light_t > 0.0:
-		_light_t -= delta
-		_light.light_energy = _light_energy * maxf(0.0, _light_t / 0.12)
-		if _light_t <= 0.0:
-			_light.visible = false
