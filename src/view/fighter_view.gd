@@ -2,7 +2,8 @@ class_name FighterView
 extends Node3D
 ## Hình ảnh một tướng: thân người dựng bằng khối, tay chân có khớp (IK hai đoạn),
 ## giáp lá, mũ trụ, râu, áo choàng. Chỉ đọc FighterState, không bao giờ ghi vào sim.
-## Khi có model 3D thật chỉ cần thay lớp này; sim và config giữ nguyên.
+## Có model 3D (CharacterModel) thì ẩn thân dựng bằng khối, uốn xương model theo cùng các khớp
+## (SkinnedRig); vũ khí, khiên vẫn dựng bằng khối. Sim và config giữ nguyên.
 
 const S := FighterState.State
 const LAMELLAR := "res://assets/shaders/lamellar.gdshader"
@@ -49,6 +50,11 @@ var _jolt := 0.0
 ## luôn đi vòng phía trước người, không quét ra sau lưng khi đổi hướng.
 var _hand_rot := Vector3.ZERO
 var _body_scale := Vector3.ONE
+var _rig: SkinnedRig
+var _model_mesh: MeshInstance3D
+var _model_flash: StandardMaterial3D
+## Cổ chân của model cao hơn cổ chân thân khối bao nhiêu (mét).
+var _rig_ankle_offset := 0.0
 var _gait := 0.0
 var _gait_amount := 0.0
 var _local_vel := Vector2.ZERO
@@ -57,13 +63,15 @@ var _twist := 0.0
 var _lean := 0.0
 
 
-func setup(p_state: FighterState, p_poses: PoseSet, p_is_player: bool) -> void:
+func setup(p_state: FighterState, p_poses: PoseSet, p_is_player: bool, model: CharacterModel = null) -> void:
 	fighter_id = p_state.id
 	def = p_state.def
 	poses = p_poses
 	is_player = p_is_player
 	name = "Fighter%d" % fighter_id
 	_build()
+	if model:
+		_attach_model(model)
 	var p: Array = poses.get_pose("idle")
 	_hand.position = p[0]
 	_hand.rotation_degrees = p[1]
@@ -192,6 +200,64 @@ func _build() -> void:
 		_mi(sphere(0.07, 0.07, true), gold, _shield, Vector3(0, 0, -0.02), Vector3(-90, 0, 0))
 
 
+## Thay thân dựng bằng khối bằng model có khung xương. Không dùng được thì giữ thân khối.
+func _attach_model(model: CharacterModel) -> void:
+	if model.scene == null:
+		return
+	var root := model.scene.instantiate() as Node3D
+	var rig := SkinnedRig.new()
+	if root == null or not rig.setup(root, model.height):
+		push_warning("Model không có khung xương chuẩn UE5, giữ thân dựng bằng khối")
+		if root:
+			root.free()
+		return
+	_rig = rig
+	_hide_block_body(_body)
+	root.transform = rig.to_body
+	_body.add_child(root)
+	_rig_ankle_offset = (rig.to_body * rig.skel.get_bone_global_rest(rig._leg[1][2]).origin).y - ANKLE_HEIGHT
+	_cape_mat = null
+
+	_model_mesh = _find_mesh(root)
+	if _model_mesh:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = model.tint
+		mat.albedo_texture = model.albedo
+		mat.roughness = 0.55
+		mat.metallic = 0.5 if model.albedo == null else 0.0
+		if model.normal:
+			mat.normal_enabled = true
+			mat.normal_texture = model.normal
+		for i in _model_mesh.mesh.get_surface_count():
+			_model_mesh.set_surface_override_material(i, mat)
+		# Lớp phủ để chớp sáng khi bị chém trúng.
+		_model_flash = StandardMaterial3D.new()
+		_model_flash.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_model_flash.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_model_flash.albedo_color = Color(1, 0.9, 0.85, 0.0)
+		_model_mesh.material_overlay = _model_flash
+
+
+## Ẩn các khối hình của thân, chừa vũ khí và khiên.
+func _hide_block_body(n: Node) -> void:
+	for c in n.get_children():
+		if c == _hand or c == _shield:
+			continue
+		if c is MeshInstance3D:
+			(c as MeshInstance3D).visible = false
+		_hide_block_body(c)
+
+
+static func _find_mesh(n: Node) -> MeshInstance3D:
+	if n is MeshInstance3D:
+		return n
+	for c in n.get_children():
+		var m := _find_mesh(c)
+		if m:
+			return m
+	return null
+
+
 func _build_head(skin: Material, hair: Material, metal: Material, gold: Material, red: Material, leather: Material) -> void:
 	_head = Node3D.new()
 	_head.position = Vector3(0, 0.56, 0)
@@ -276,6 +342,8 @@ func sync(cur: FighterState, prev_pos: Vector2, prev_yaw: float, alpha: float, d
 	if _flash > 0.0:
 		_flash = maxf(0.0, _flash - delta * 5.0)
 		_armor_mat.set_shader_parameter("tint", def.armor_color.lerp(Color(1, 0.9, 0.85), _flash))
+		if _model_flash:
+			_model_flash.albedo_color.a = _flash * 0.7
 
 
 ## Bị chém trúng: giáp chớp sáng.
@@ -395,6 +463,8 @@ func _update_limbs() -> void:
 	move_dir = move_dir.normalized() if move_dir.length() > 0.05 else Vector3(0, 0, -1)
 	var half := poses.stride_length * 0.5 * _gait_amount
 
+	var feet := {}
+	var knee_poles := {}
 	for side in [-1, 1]:
 		var phase := _gait + (PI if side == 1 else 0.0)
 		# Thế đứng thủ: chân trái trước, chân phải sau.
@@ -402,7 +472,9 @@ func _update_limbs() -> void:
 		var foot := stance + move_dir * sin(phase) * half
 		foot.y += maxf(0.0, cos(phase)) * poses.foot_lift * _gait_amount
 		var hip := pelvis * Vector3(HIP_JOINT.x * side, HIP_JOINT.y, HIP_JOINT.z)
-		var knee := _ik(hip, foot, THIGH, SHIN, Vector3(0.15 * side, 0, -1))
+		feet[side] = foot + Vector3(0, _rig_ankle_offset, 0)
+		knee_poles[side] = Vector3(0.3 * side, 0, -1)
+		var knee := _ik(hip, foot, THIGH, SHIN, knee_poles[side])
 		_segment(_thigh[side], hip, knee)
 		_segment(_shin[side], knee, foot)
 		(_foot[side] as MeshInstance3D).position = foot + Vector3(0, -0.03, -0.06)
@@ -423,6 +495,10 @@ func _update_limbs() -> void:
 	if _shield:
 		_shield.position = l_hand + Vector3(0.02, 0.0, -0.06)
 		_shield.rotation = Vector3(0.1, _twist * 0.5, 0.0)
+
+	if _rig:
+		_rig.pose(HIP_HEIGHT - _pelvis.position.y, _pelvis.rotation.y, Vector3(_lean, _twist, 0.0), Vector3(-_lean * 0.5, -_twist * 0.6, 0.0),
+			{1: _hand.position, -1: l_hand}, {1: Vector3(0.4, -0.6, 0.5), -1: Vector3(-0.4, -0.6, 0.5)}, feet, knee_poles)
 
 
 ## Đặt cánh tay theo IK; trả về vị trí bàn tay thực tế.

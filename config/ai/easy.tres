@@ -19,3 +19,7 @@ attack_cooldown_max = 3.0
 preferred_range_factor = 0.85
 min_stamina_to_attack = 25.0
 feint_chance = 0.0
+read_block_chance = 0.25
+punish_chance = 0.2
+retreat_after_attack = 0.4
+step_back_chance = 0.05

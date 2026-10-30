@@ -38,8 +38,22 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - Giơ đỡ đúng hướng sát lúc đòn tới là **đỡ hoàn hảo**: người chém bị khựng lâu.
 - Đỡ tốn thể lực; hết thể lực thì bị phá thế. Đòn từ sau lưng hoặc bên sườn không đỡ được.
 - Chém trúng địch đầu tiên trong tầm và cung chém; ngoài tầm thì hụt.
+- Bị chém trúng khi đang gồng hoặc đang vung thì khựng và mất đòn (như Mount & Blade). Hai người chém trúng nhau
+  cùng lúc thì cả hai đòn đều tính.
+- Lao tới khi chém thì đòn mạnh hơn (tối đa ×1,35), vừa lùi vừa chém thì yếu hơn (tối thiểu ×0,8), như Mount & Blade.
+- Bot đánh kiểu Mount & Blade: thấy bạn giơ đỡ thì chém vào phía không đỡ, chém ngay khi bạn hở (vừa chém hụt,
+  đang khựng), chém xong lùi lại giữ khoảng cách. Đánh hội đồng: tối đa 2 bot ra đòn cùng lúc, và bot chỉ ra đòn khi
+  không có ai đứng chắn giữa nó và bạn, nên đứng sao cho địch dồn thành một hàng là chỉ phải đỡ một người.
 - Đỡ được thì có chớp sáng, tia lửa và tiếng binh khí va nhau; vũ khí người chém bị dội ngược lại.
   Bị chém trúng thì máu bắn, giáp chớp và tiếng phập.
+
+## Model 3D
+
+Tướng của người chơi dùng model `assets/models/tuong/tuong.fbx` (khai báo ở `config/models/tuong.tres`,
+gắn vào `player_model` trong `config/game_config.tres`). Model cần khung xương chuẩn UE5 (`pelvis`, `spine_02..04`,
+`upperarm_r`, `lowerarm_r`, `hand_r`, `thigh_l`, `calf_l`, `foot_l`...), không cần hoạt cảnh: `SkinnedRig` uốn xương
+theo đúng các khớp mà thân dựng bằng khối đang dùng. Vũ khí, khiên vẫn dựng bằng khối. Ảnh texture đặt vào
+`albedo` / `normal` của `config/models/tuong.tres`; để trống thì model một màu.
 
 ## Cấu trúc
 

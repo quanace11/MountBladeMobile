@@ -1,15 +1,17 @@
-[gd_resource type="Resource" script_class="GameConfig" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="GameConfig" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/data/game_config.gd" id="1_g"]
+[ext_resource type="Resource" path="res://config/models/tuong.tres" id="2_m"]
 
 [resource]
 script = ExtResource("1_g")
 tick_rate = 30
-max_attackers_at_once = 1
+max_attackers_at_once = 2
 arena_radius = 14.0
 spawn_distance = 6.0
 auto_face_range = 12.0
 rng_seed = 0
+player_model = ExtResource("2_m")
 camera_distance = 4.0
 camera_height = 2.4
 camera_shoulder_offset = 0.0
