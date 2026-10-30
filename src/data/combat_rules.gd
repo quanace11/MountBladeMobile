@@ -35,5 +35,9 @@ extends Resource
 @export var dodge_iframes: float = 0.28
 @export var dodge_stamina_cost: float = 20.0
 @export var dodge_recovery: float = 0.15
+## Sát thương nhân thêm theo tốc độ lao vào nhau dọc hướng chém (mỗi m/s), giới hạn dưới và trên.
+@export var speed_bonus_per_mps: float = 0.08
+@export var speed_bonus_min: float = 0.8
+@export var speed_bonus_max: float = 1.35
 ## Thể lực bắt đầu hồi sau khi dùng (giây).
 @export var stamina_regen_delay: float = 0.8

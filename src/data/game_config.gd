@@ -13,6 +13,8 @@ extends Resource
 @export var auto_face_range: float = 12.0
 ## Seed ngẫu nhiên (0 = ngẫu nhiên theo thời gian).
 @export var rng_seed: int = 0
+## Model 3D cho tướng của người chơi (tạm thời chỉ người chơi). Để trống thì dùng thân dựng bằng khối.
+@export var player_model: CharacterModel
 @export var camera_distance: float = 3.4
 @export var camera_height: float = 2.1
 @export var camera_shoulder_offset: float = 0.55

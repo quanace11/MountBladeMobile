@@ -44,7 +44,29 @@ static func find_target(attacker: FighterState, fighters: Array[FighterState], c
 	return best
 
 
-static func resolve_impact(attacker: FighterState, fighters: Array[FighterState], ctx: SimContext, tick: int, events: Array) -> void:
+## Hệ số sát thương theo tốc độ lao vào nhau dọc hướng chém (như Mount & Blade):
+## chạy tới khi chém thì mạnh hơn, vừa chém vừa lùi thì yếu hơn.
+static func speed_bonus(attacker: FighterState, target: FighterState, rules: CombatRules) -> float:
+	var to := target.pos - attacker.pos
+	if to.length() < 0.001:
+		return 1.0
+	var closing := (attacker.velocity - target.velocity).dot(to.normalized())
+	return clampf(1.0 + closing * rules.speed_bonus_per_mps, rules.speed_bonus_min, rules.speed_bonus_max)
+
+
+## Bị chém trúng: mất đòn đang gồng/đang chém, khựng một lúc.
+static func stun(target: FighterState, ctx: SimContext) -> void:
+	target.attack_dir = Dir.NONE
+	target.block_dir = Dir.NONE
+	target.release_queued = false
+	target.buffered_attack_dir = Dir.NONE
+	target.set_state(S.STAGGER, ctx.ticks(ctx.rules.hit_stun))
+
+
+## impacting: các tướng có đòn chạm trong cùng tick. Người bị trúng mà cũng đang có đòn chạm thì
+## chưa khựng ngay (để đòn của họ vẫn được xét), mà được thêm vào stunned để khựng sau.
+static func resolve_impact(attacker: FighterState, fighters: Array[FighterState], ctx: SimContext, tick: int, events: Array,
+		impacting: Array[FighterState] = [], stunned: Array[FighterState] = []) -> void:
 	var rules := ctx.rules
 	var w := attacker.def.weapon
 	var target := find_target(attacker, fighters, ctx)
@@ -53,7 +75,7 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 		attacker.set_state(S.RECOVERY, ctx.ticks(w.recovery_time))
 		return
 
-	var dmg := w.damage_for(attacker.attack_dir)
+	var dmg := w.damage_for(attacker.attack_dir) * speed_bonus(attacker, target, rules)
 	var need := required_block_dir(attacker, target)
 	var in_cone := angle_to(target, attacker.pos) <= deg_to_rad(rules.block_half_angle_deg)
 	var dir_ok := target.block_dir == need or target.def.weapon.has_shield
@@ -86,11 +108,11 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 	target.hp = maxf(0.0, target.hp - dmg)
 	attacker.set_state(S.RECOVERY, ctx.ticks(w.recovery_time))
 	events.append(base.merged({"type": &"hit", "damage": dmg}))
-	target.attack_dir = Dir.NONE
-	target.block_dir = Dir.NONE
-	target.release_queued = false
 	if target.hp <= 0.0:
 		target.set_state(S.DEAD)
 		events.append({"type": &"died", "id": target.id, "by": attacker.id})
+	elif impacting.has(target):
+		if not stunned.has(target):
+			stunned.append(target)
 	else:
-		target.set_state(S.STAGGER, ctx.ticks(rules.hit_stun))
+		stun(target, ctx)

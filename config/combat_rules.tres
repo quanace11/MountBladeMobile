@@ -23,3 +23,6 @@ dodge_distance = 2.6
 dodge_iframes = 0.28
 dodge_stamina_cost = 20.0
 dodge_recovery = 0.15
+speed_bonus_per_mps = 0.08
+speed_bonus_min = 0.8
+speed_bonus_max = 1.35

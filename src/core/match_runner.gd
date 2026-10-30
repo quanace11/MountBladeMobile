@@ -38,7 +38,7 @@ func _ready() -> void:
 	for f in sim.state.fighters:
 		var v := FighterView.new()
 		add_child(v)
-		v.setup(f, ConfigDB.poses, f.id == player_id)
+		v.setup(f, ConfigDB.poses, f.id == player_id, cfg.player_model if f.id == player_id else null)
 		views[f.id] = v
 		_prev_pos[f.id] = f.pos
 		_prev_yaw[f.id] = f.yaw

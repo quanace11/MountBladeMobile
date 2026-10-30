@@ -48,9 +48,18 @@ func step(commands: Dictionary) -> Array:
 	for f in state.fighters:
 		FighterSim.advance_timers(f, ctx, events)
 
+	# Xét mọi đòn chạm trong tick này cùng lúc: hai người chém trúng nhau cùng lúc thì cả hai
+	# đòn đều tính (như Mount & Blade), không phải ai được xét trước thì ngắt đòn người kia.
+	var impacting: Array[FighterState] = []
 	for f in state.fighters:
 		if FighterSim.is_impact_tick(f, ctx):
-			CombatResolver.resolve_impact(f, state.fighters, ctx, state.tick, events)
+			impacting.append(f)
+	var stunned: Array[FighterState] = []
+	for f in impacting:
+		CombatResolver.resolve_impact(f, state.fighters, ctx, state.tick, events, impacting, stunned)
+	for f in stunned:
+		if f.is_alive():
+			CombatResolver.stun(f, ctx)
 
 	var teams := state.alive_teams()
 	if teams.size() <= 1:
