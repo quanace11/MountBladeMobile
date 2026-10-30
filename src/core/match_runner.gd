@@ -106,6 +106,7 @@ func apply_controls() -> void:
 	touch.combat.scheme = p.block_scheme
 	player_src.free_aim = p.free_aim
 	player_src.aim_assist = p.aim_assist
+	player_src.auto_block = p.auto_block
 
 
 func _process(delta: float) -> void:

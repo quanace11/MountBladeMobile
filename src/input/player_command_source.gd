@@ -10,6 +10,8 @@ var camera_yaw: Callable
 var free_aim := true
 ## Đang chém mà có địch gần tâm ngắm thì quay nhẹ về phía địch đó.
 var aim_assist := false
+## Giữ ĐỠ thì tự giơ đỡ về phía đòn của địch đang chém mình.
+var auto_block := true
 ## Trợ ngắm: chỉ hút về địch nằm trong góc này quanh tâm ngắm (độ).
 const ASSIST_HALF_ANGLE_DEG := 35.0
 
@@ -38,6 +40,10 @@ func get_command(state: MatchState) -> FighterCommand:
 	c.block_dir = touch.block_dir()
 	if c.block_dir == Dir.NONE:
 		c.block_dir = keyboard.block_dir()
+	if auto_block and c.block_dir != Dir.NONE:
+		var incoming := _incoming_block_dir(state)
+		if incoming != Dir.NONE:
+			c.block_dir = incoming
 
 	var key_dir := keyboard.attack_dir()
 	var released := touch.consume_release()
@@ -72,3 +78,25 @@ func _assist(c: FighterCommand, state: MatchState) -> void:
 			continue
 		best_d = d
 		c.face_yaw = FighterState.yaw_from_direction(to / d)
+
+
+## Hướng cần đỡ đòn của địch gần nhất đang gồng hoặc đang chém về phía mình; NONE nếu không có.
+func _incoming_block_dir(state: MatchState) -> int:
+	var me := state.get_fighter(fighter_id)
+	if me == null:
+		return Dir.NONE
+	var best: FighterState = null
+	var best_d := INF
+	for o in state.fighters:
+		if o.team == me.team or not o.is_alive() or o.attack_dir == Dir.NONE:
+			continue
+		if o.state != FighterState.State.WINDUP and o.state != FighterState.State.RELEASE:
+			continue
+		var d := o.pos.distance_to(me.pos)
+		# Chỉ tính địch đang quay về phía mình và đủ gần để đòn tới.
+		if d > o.def.weapon.reach + 1.5 or CombatResolver.angle_to(o, me.pos) > deg_to_rad(70.0):
+			continue
+		if d < best_d:
+			best_d = d
+			best = o
+	return CombatResolver.required_block_dir(best, me) if best else Dir.NONE

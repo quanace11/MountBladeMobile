@@ -28,7 +28,9 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - **Tay phải**: nút **CHÉM** sát góc phải dưới: giữ và kéo về hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó),
   nhả tay để chém; bấm không kéo là bổ. Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
   Nhả nút khi đang chém dở hoặc đang thu vũ khí thì game nhớ lệnh và chém tiếp ngay khi rảnh (chém liên hoàn).
-- Nút **ĐỠ** bên trái nút CHÉM: giữ và kéo về phía đòn đang đến.
+- Nút **ĐỠ** bên trái nút CHÉM: giữ là giơ đỡ ngay, tự quay về phía đòn đang tới (tuỳ chọn *Tự đỡ đúng hướng*,
+  như "Block direction: Automatic" của Bannerlord). Tắt tuỳ chọn đó thì kéo nút về phía đòn đang đến.
+  Vừa chém xong, hoặc vũ khí vừa bị đỡ dội lại, vẫn giơ đỡ được ngay; chỉ khi bị chém trúng mới phải chờ.
   Kiểu vuốt cả vùng (trong *Tự chỉnh*) đỡ bằng nút ĐỠ hoặc nét gấp khúc `^` `<` `>` `v`, giữ ngón tay là giữ thế đỡ.
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
   (A chém từ bên phải của A thì B phải đỡ bên trái của B).

@@ -29,6 +29,13 @@ static func apply_command(f: FighterState, cmd: FighterCommand, ctx: SimContext,
 					events.append({"type": &"no_stamina", "id": f.id})
 				f.buffered_attack_dir = Dir.NONE
 		S.RELEASE, S.RECOVERY, S.STAGGER, S.DODGE:
+			# Như Bannerlord: đang thu vũ khí hoặc vũ khí vừa bị đỡ dội lại thì vẫn giơ đỡ được ngay.
+			# Bị chém trúng (khựng thật), đang chém, đang lăn thì phải chờ.
+			if cmd.block_dir != Dir.NONE and (f.state == S.RECOVERY or (f.state == S.STAGGER and f.recoil)):
+				f.attack_dir = Dir.NONE
+				f.buffered_attack_dir = Dir.NONE
+				_start_block(f, cmd.block_dir, tick)
+				return
 			# Bấm chém sớm khi đang bận: nhớ lệnh để chém ngay khi rảnh. Đang chém, đang thu thì
 			# luôn nhớ (chém liên hoàn); đang khựng, đang lăn thì chỉ nhớ khi sắp hết.
 			if cmd.attack_release and cmd.attack_dir != Dir.NONE:

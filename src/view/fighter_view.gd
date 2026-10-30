@@ -371,7 +371,7 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 			pose = PoseSet.pose_name("strike", cur.attack_dir) if cur.state_ticks < 3 else "idle"
 		S.BLOCK:
 			pose = PoseSet.pose_name("block", cur.block_dir)
-			speed *= 1.6
+			speed *= 2.8
 		S.STAGGER:
 			if cur.recoil:
 				# Đòn bị đỡ: vũ khí dội ngược về phía vừa vung tới, người không ngả như bị trúng.
