@@ -4,3 +4,7 @@ export/
 *.apk
 *.aab
 android/build/
+
+# File gốc của model nặng (giữ ngoài repo), game dùng bản .scn đã gói bằng tools/pack_model.gd.
+assets/models/tuongtrang/tuongtrang.fbx
+assets/models/tuongtrang/tuongtrang.fbx.import
