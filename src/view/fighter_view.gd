@@ -52,7 +52,8 @@ var _hand_rot := Vector3.ZERO
 var _body_scale := Vector3.ONE
 var _rig: SkinnedRig
 var _model_mesh: MeshInstance3D
-var _model_flash: StandardMaterial3D
+## Vật liệu của model; chớp sáng khi bị trúng bằng emission (không thêm lượt vẽ, không đổi shader).
+var _model_mat: StandardMaterial3D
 ## Cổ chân của model cao hơn cổ chân thân khối bao nhiêu (mét).
 var _rig_ankle_offset := 0.0
 var _gait := 0.0
@@ -129,6 +130,81 @@ static func sphere(r: float, h: float, half := false) -> SphereMesh:
 	return s
 
 
+## Gộp các khối hình con đứng yên với nhau thành một lưới, mỗi vật liệu một mặt. Mỗi khối là một
+## lệnh vẽ (và thêm một lệnh nữa cho bóng), nên gộp lại đỡ cho điện thoại rất nhiều.
+## recursive: gộp cả khối trong các nhóm con (nhóm con đứng yên). skip: vật liệu không gộp
+## (ví dụ áo choàng, shader của nó dựa vào toạ độ riêng của tấm vải).
+static func merge_meshes(group: Node3D, recursive := false, skip: Material = null) -> MeshInstance3D:
+	var parts := {}
+	_collect_meshes(group, Transform3D.IDENTITY, recursive, skip, parts)
+	if parts.is_empty():
+		return null
+	var mesh := ArrayMesh.new()
+	for mat in parts:
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		var p: Array = parts[mat]
+		arrays[Mesh.ARRAY_VERTEX] = p[0]
+		arrays[Mesh.ARRAY_NORMAL] = p[1]
+		arrays[Mesh.ARRAY_TANGENT] = p[2]
+		arrays[Mesh.ARRAY_TEX_UV] = p[3]
+		arrays[Mesh.ARRAY_INDEX] = p[4]
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		mesh.surface_set_material(mesh.get_surface_count() - 1, mat)
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	group.add_child(mi)
+	return mi
+
+
+## Gom đỉnh của các khối vào parts (vật liệu -> [đỉnh, pháp tuyến, tiếp tuyến, uv, chỉ số]) rồi xoá khối.
+static func _collect_meshes(n: Node3D, xf: Transform3D, recursive: bool, skip: Material, parts: Dictionary) -> void:
+	for c in n.get_children():
+		var m := c as MeshInstance3D
+		if m and m.mesh and m.material_override != skip and m.mesh.get_surface_count() == 1:
+			var t := xf * m.transform
+			var nb := t.basis.inverse().transposed()
+			var a := m.mesh.surface_get_arrays(0)
+			var mat := m.material_override
+			if not parts.has(mat):
+				parts[mat] = [PackedVector3Array(), PackedVector3Array(), PackedFloat32Array(), PackedVector2Array(), PackedInt32Array()]
+			var p: Array = parts[mat]
+			var verts: PackedVector3Array = p[0]
+			var norms: PackedVector3Array = p[1]
+			var tans: PackedFloat32Array = p[2]
+			var uvs: PackedVector2Array = p[3]
+			var idx: PackedInt32Array = p[4]
+			var base := verts.size()
+			var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+			var nr: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+			var tg = a[Mesh.ARRAY_TANGENT]
+			var uv = a[Mesh.ARRAY_TEX_UV]
+			for i in v.size():
+				verts.append(t * v[i])
+				norms.append((nb * nr[i]).normalized())
+				if tg != null:
+					var tt := (t.basis * Vector3(tg[i * 4], tg[i * 4 + 1], tg[i * 4 + 2])).normalized()
+					tans.append_array([tt.x, tt.y, tt.z, tg[i * 4 + 3]])
+				else:
+					tans.append_array([1.0, 0.0, 0.0, 1.0])
+				uvs.append(uv[i] if uv != null else Vector2.ZERO)
+			var ix = a[Mesh.ARRAY_INDEX]
+			if ix != null:
+				for i in ix:
+					idx.append(base + i)
+			else:
+				for i in v.size():
+					idx.append(base + i)
+			parts[mat] = [verts, norms, tans, uvs, idx]
+			n.remove_child(m)
+			m.free()
+		elif recursive and c is Node3D and not (c is MeshInstance3D):
+			_collect_meshes(c, xf * (c as Node3D).transform, true, skip, parts)
+			if c.get_child_count() == 0:
+				n.remove_child(c)
+				c.free()
+
+
 func _build() -> void:
 	var skin := Mats.color(def.skin_color, 0.6)
 	var cloth := Mats.color(def.cloth_color, 0.95)
@@ -174,6 +250,9 @@ func _build() -> void:
 		_mi(quad, _cape_mat, _chest, Vector3(0, -0.1, 0.22), Vector3(-8, 0, 0))
 
 	_build_head(skin, hair, metal, gold, red, leather)
+	merge_meshes(_pelvis)
+	merge_meshes(_chest, false, _cape_mat)
+	merge_meshes(_head)
 
 	for side in [-1, 1]:
 		_upper_arm[side] = _mi(capsule(0.052, UPPER_ARM + 0.08), cloth, _body)
@@ -186,6 +265,7 @@ func _build() -> void:
 	_hand = Node3D.new()
 	_body.add_child(_hand)
 	_weapon = _build_weapon(def.weapon, metal, gold, red)
+	merge_meshes(_weapon)
 	_hand.add_child(_weapon)
 
 	if def.weapon.has_shield:
@@ -200,6 +280,7 @@ func _build() -> void:
 		rim.ring_segments = 4
 		_mi(rim, metal, _shield, Vector3.ZERO, Vector3(90, 0, 0))
 		_mi(sphere(0.07, 0.07, true), gold, _shield, Vector3(0, 0, -0.02), Vector3(-90, 0, 0))
+		merge_meshes(_shield)
 
 
 ## Thay thân dựng bằng khối bằng model có khung xương. Không dùng được thì giữ thân khối.
@@ -230,14 +311,14 @@ func _attach_model(model: CharacterModel) -> void:
 		if model.normal:
 			mat.normal_enabled = true
 			mat.normal_texture = model.normal
+		# Chớp sáng khi bị chém trúng: bật emission sẵn (độ sáng 0) để lúc chớp không phải dịch shader mới.
+		# Lớp phủ trong suốt thì phải vẽ lại cả model mỗi khung dù không chớp.
+		mat.emission_enabled = true
+		mat.emission = Color(1, 0.9, 0.85)
+		mat.emission_energy_multiplier = 0.0
 		for i in _model_mesh.mesh.get_surface_count():
 			_model_mesh.set_surface_override_material(i, mat)
-		# Lớp phủ để chớp sáng khi bị chém trúng.
-		_model_flash = StandardMaterial3D.new()
-		_model_flash.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_model_flash.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		_model_flash.albedo_color = Color(1, 0.9, 0.85, 0.0)
-		_model_mesh.material_overlay = _model_flash
+		_model_mat = mat
 
 
 ## Ẩn các khối hình của thân, chừa vũ khí và khiên.
@@ -344,8 +425,8 @@ func sync(cur: FighterState, prev_pos: Vector2, prev_yaw: float, alpha: float, d
 	if _flash > 0.0:
 		_flash = maxf(0.0, _flash - delta * 5.0)
 		_armor_mat.set_shader_parameter("tint", def.armor_color.lerp(Color(1, 0.9, 0.85), _flash))
-		if _model_flash:
-			_model_flash.albedo_color.a = _flash * 0.7
+		if _model_mat:
+			_model_mat.emission_energy_multiplier = _flash * 1.5
 
 
 ## Bị chém trúng: giáp chớp sáng.

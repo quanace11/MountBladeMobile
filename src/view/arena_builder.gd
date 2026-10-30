@@ -114,6 +114,8 @@ static func _houses(parent: Node3D, a: ArenaDef, spots: Array, rng: RandomNumber
 	var wall := Mats.pbr(a.wall_texture, 0.5, true)
 	var wood := Mats.pbr(a.wood_texture, 1.0)
 	var roof := Mats.pbr(a.roof_texture, 2.0)
+	var root := Node3D.new()
+	parent.add_child(root)
 	for p in spots:
 		var w := rng.randf_range(5.0, 7.5)
 		var d := rng.randf_range(4.0, 5.0)
@@ -121,7 +123,7 @@ static func _houses(parent: Node3D, a: ArenaDef, spots: Array, rng: RandomNumber
 		var house := Node3D.new()
 		house.position = Vector3(p.x, 0, p.y)
 		house.rotation.y = atan2(p.x, p.y)
-		parent.add_child(house)
+		root.add_child(house)
 		_part(house, FighterView.box(Vector3(w + 0.6, 0.5, d + 0.6)), stone, Vector3(0, 0.25, 0))
 		_part(house, FighterView.box(Vector3(w, h, d)), wall, Vector3(0, 0.5 + h * 0.5, 0))
 		for cx in [-w * 0.5, w * 0.5]:
@@ -135,6 +137,8 @@ static func _houses(parent: Node3D, a: ArenaDef, spots: Array, rng: RandomNumber
 		var roof_mi := _part(house, prism, roof, Vector3(0, 0.5 + h + 0.95, 0))
 		roof_mi.rotation.y = PI * 0.5
 		_part(house, FighterView.cyl(0.12, 0.12, w + 1.6, 6), wood, Vector3(0, 0.5 + h + 1.9, 0), Vector3(0, 0, 90))
+	# Mọi nhà gộp thành một lưới, mỗi vật liệu một lệnh vẽ (thay vì ~15 lệnh vẽ mỗi nhà).
+	FighterView.merge_meshes(root, true)
 
 
 static func _part(parent: Node3D, mesh: Mesh, mat: Material, pos: Vector3, rot_deg := Vector3.ZERO) -> MeshInstance3D:
