@@ -780,12 +780,12 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 
 
 ## Đường vung của từng hướng chém: lưỡi đi qua hướng này ở giữa đường (theo thân).
-## Chém ngang thì quét vòng phía trước qua bên sườn, bổ thì vung qua đỉnh đầu, đâm thì đi thẳng.
+## Chém trái/phải thì quét ngang ngang vai qua bên sườn ra trước mặt, bổ thì vung qua đỉnh đầu, đâm thì đi thẳng.
 static func _swing_via(dir: int) -> Vector3:
 	match dir:
 		Dir.UP: return Vector3(-0.05, 1.0, -0.15).normalized()
-		Dir.RIGHT: return Vector3(1.0, 0.3, -0.25).normalized()
-		Dir.LEFT: return Vector3(-1.0, 0.3, -0.25).normalized()
+		Dir.RIGHT: return Vector3(1.0, 0.05, -0.25).normalized()
+		Dir.LEFT: return Vector3(-1.0, 0.05, -0.25).normalized()
 	return Vector3.ZERO
 
 
@@ -805,8 +805,15 @@ func _update_swing(cur: FighterState, strike_pos: Vector3, strike: Basis, delta:
 		_shaft = _swing_from_shaft.slerp(via, e * 2.0)
 	else:
 		_shaft = via.slerp(strike.y, e * 2.0 - 1.0)
-	_edge = _swing_from_edge.slerp(strike.x, e)
 	_hand.position = _swing_from_pos.lerp(strike_pos, e)
+	if cur.attack_dir == Dir.LEFT or cur.attack_dir == Dir.RIGHT:
+		# Vung ngang: mặt lưỡi nằm ngang, lưỡi sắc luôn đi trước theo vòng quét; tay đưa vòng ra trước ngực.
+		var s := 1.0 if cur.attack_dir == Dir.RIGHT else -1.0
+		var lead := _shaft.cross(Vector3.UP) * s
+		_edge = _swing_from_edge.slerp(lead, minf(1.0, e * 4.0)) if lead.length() > 0.1 else _edge
+		_hand.position += Vector3(0, 0, -0.18) * sin(PI * e)
+	else:
+		_edge = _swing_from_edge.slerp(strike.x, e)
 
 
 ## Xoay hướng a về b một phần k; nếu đường ngắn nhất đi qua sau lưng thì vòng ra phía trước.

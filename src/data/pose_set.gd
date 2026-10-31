@@ -4,8 +4,8 @@ extends Resource
 ## Mỗi tư thế gồm vị trí bàn tay phải (mét, theo thân: x phải, y lên, -z trước)
 ## và góc vũ khí (độ, Euler YXZ). Vũ khí dựng theo trục +y từ bàn tay (phía lưỡi), lưỡi sắc quay về -x.
 ## Tay trái tự nắm chỗ cán gần vai trái nhất, nên cả hai tay luôn ở trên cán.
-## Các góc được tính từ hướng lưỡi và hướng lưỡi sắc cho tiện chỉnh: gồng ngang thì lưỡi chĩa ra sau
-## vai, chém xong lưỡi ở trước mặt phía bên kia; bổ thì lưỡi từ sau đầu vung qua đỉnh xuống trước mặt.
+## Các góc được tính từ hướng lưỡi và hướng lưỡi sắc cho tiện chỉnh: chém trái/phải là vung ngang ngang vai,
+## gồng thì lưỡi nằm ngang chĩa ra sau vai, chém xong lưỡi ở trước mặt phía bên kia, lưỡi sắc đi trước; bổ thì lưỡi từ sau đầu vung qua đỉnh xuống trước mặt.
 
 @export_group("Đứng")
 @export var idle_pos := Vector3(0.22, 1.0, -0.12)
@@ -13,19 +13,19 @@ extends Resource
 @export_group("Gồng")
 @export var windup_up_pos := Vector3(0.12, 1.62, 0.0)
 @export var windup_up_rot := Vector3(0, -97, -60)
-@export var windup_left_pos := Vector3(-0.12, 1.55, 0.05)
-@export var windup_left_rot := Vector3(-38, 180, -27)
-@export var windup_right_pos := Vector3(0.3, 1.5, 0.0)
-@export var windup_right_rot := Vector3(40, 0, -30)
+@export var windup_left_pos := Vector3(-0.15, 1.42, 0.05)
+@export var windup_left_rot := Vector3(87, -33, 0)
+@export var windup_right_pos := Vector3(0.32, 1.4, 0.02)
+@export var windup_right_rot := Vector3(-87, -147, 0)
 @export var windup_thrust_pos := Vector3(0.28, 1.12, 0.25)
 @export var windup_thrust_rot := Vector3(0, -81, 81)
 @export_group("Chém")
 @export var strike_up_pos := Vector3(0.15, 1.15, -0.35)
 @export var strike_up_rot := Vector3(0, -90, 110)
-@export var strike_left_pos := Vector3(0.4, 1.2, -0.4)
-@export var strike_left_rot := Vector3(81, -180, 49)
-@export var strike_right_pos := Vector3(-0.05, 1.25, -0.45)
-@export var strike_right_rot := Vector3(-81, 0, 49)
+@export var strike_left_pos := Vector3(0.4, 1.35, -0.4)
+@export var strike_left_rot := Vector3(90, 127, 0)
+@export var strike_right_pos := Vector3(-0.1, 1.35, -0.45)
+@export var strike_right_rot := Vector3(-90, 53, 0)
 @export var strike_thrust_pos := Vector3(0.18, 1.25, -0.45)
 @export var strike_thrust_rot := Vector3(0, -85, 87)
 @export_group("Đỡ")
