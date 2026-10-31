@@ -11,12 +11,15 @@ var to_skel: Transform3D
 var to_body: Transform3D
 ## Model quay mặt về +z, game quay mặt về -z: xoay 180 độ quanh trục đứng.
 var _flip := Basis(Vector3.UP, PI)
+## Xương đòn xoay tối đa bao nhiêu khi vươn tay (radian).
+const SHRUG_MAX := 0.45
 
 var _pelvis: int
 var _spine: Array[int] = []
 var _head: int
 var _arm := {}  # side -> [upperarm, lowerarm, hand]
 var _leg := {}  # side -> [thigh, calf, foot]
+var _clav := {}  # side -> xương đòn (clavicle), -1 nếu model không có
 var _len := {}  # bone -> độ dài tới xương con, theo toạ độ khung xương
 
 
@@ -38,6 +41,9 @@ func setup(model: Node3D, model_height: float) -> bool:
 	for side in [1, -1]:
 		var suf := "_r" if side == 1 else "_l"
 		_arm[side] = [skel.find_bone("upperarm" + suf), skel.find_bone("lowerarm" + suf), skel.find_bone("hand" + suf)]
+		_clav[side] = skel.get_bone_parent(_arm[side][0]) if _arm[side][0] >= 0 else -1
+		if _clav[side] >= 0 and not skel.get_bone_name(_clav[side]).begins_with("clavicle"):
+			_clav[side] = -1
 		_leg[side] = [skel.find_bone("thigh" + suf), skel.find_bone("calf" + suf), skel.find_bone("foot" + suf)]
 	for chain in _arm.values() + _leg.values():
 		if chain.has(-1):
@@ -67,12 +73,33 @@ func pose(pelvis_drop: float, pelvis_yaw: float, chest: Vector3, head: Vector3,
 
 	for side in hands:
 		if hands[side] != null:
+			_shrug(side, to_skel * (hands[side] as Vector3))
 			_limb(_arm[side], to_skel * (hands[side] as Vector3), to_skel.basis * (hand_poles[side] as Vector3), false)
 	for side in feet:
 		if feet[side] != null:
 			_limb(_leg[side], to_skel * (feet[side] as Vector3), to_skel.basis * (knee_poles[side] as Vector3), true)
 			# Gập bàn chân: đặt gót, nhón mũi.
 			_rotate_global(_leg[side][2], _body_rot(Basis(Vector3.RIGHT, foot_pitch.get(side, 0.0))))
+
+
+## Tay với xa (gần hết tầm): xoay xương đòn cho vai nhô theo hướng tay, như người thật vươn vai ra cầm.
+func _shrug(side: int, target: Vector3) -> void:
+	var clav: int = _clav[side]
+	if clav < 0:
+		return
+	var a: int = _arm[side][0]
+	var reach: float = _len[a] + _len[_arm[side][1]]
+	var over := (_global(a).origin.distance_to(target) - reach * 0.8) / (reach * 0.3)
+	if over <= 0.0:
+		return
+	var c := _global(clav).origin
+	var cur := _global(a).origin - c
+	var want := target - c
+	if cur.length() < 0.0001 or want.length() < 0.0001:
+		return
+	var full := Quaternion(cur.normalized(), want.normalized())
+	var amount := minf(over, 1.0) * minf(1.0, SHRUG_MAX / maxf(0.0001, full.get_angle()))
+	_rotate_global(clav, Basis(Quaternion.IDENTITY.slerp(full, amount)))
 
 
 ## Vị trí một xương theo toạ độ thân (dùng để biết vai, hông đang ở đâu).
