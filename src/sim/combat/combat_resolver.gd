@@ -87,6 +87,9 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 	var in_cone := angle_to(target, attacker.pos) <= deg_to_rad(rules.block_half_angle_deg)
 	var dir_ok := target.block_dir == need or target.def.weapon.has_shield
 	var base := {"id": attacker.id, "target": target.id, "dir": attacker.attack_dir, "need": need}
+	# Chỗ vũ khí chạm vào (cho âm thanh): khiên; lưỡi (đỡ hoàn hảo, hai lưỡi đập thẳng vào nhau);
+	# cán (đỡ thường bằng cán đưa ra trước người); thịt (trúng người).
+	var guard_contact: StringName = &"shield" if target.def.weapon.has_shield else &"haft"
 
 	if target.state == S.BLOCK and in_cone and dir_ok:
 		var parried := tick - target.block_started_tick <= ctx.ticks(rules.parry_window)
@@ -95,7 +98,7 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 				target.stamina = maxf(0.0, target.stamina - dmg * rules.block_stamina_per_damage)
 			attacker.set_state(S.STAGGER, ctx.ticks(rules.stagger_on_parried))
 			attacker.recoil = true
-			events.append(base.merged({"type": &"parried"}))
+			events.append(base.merged({"type": &"parried", "contact": &"shield" if target.def.weapon.has_shield else &"blade"}))
 			return
 		var cost := dmg * rules.block_stamina_per_damage if rules.use_stamina else 0.0
 		target.stamina_wait = ctx.ticks(rules.stamina_regen_delay)
@@ -104,17 +107,17 @@ static func resolve_impact(attacker: FighterState, fighters: Array[FighterState]
 			target.block_dir = Dir.NONE
 			target.set_state(S.STAGGER, ctx.ticks(rules.guard_break_stun))
 			attacker.set_state(S.RECOVERY, ctx.ticks(w.recovery_time))
-			events.append(base.merged({"type": &"guard_broken"}))
+			events.append(base.merged({"type": &"guard_broken", "contact": guard_contact}))
 			return
 		target.stamina -= cost
 		attacker.set_state(S.STAGGER, ctx.ticks(rules.stagger_on_blocked))
 		attacker.recoil = true
-		events.append(base.merged({"type": &"blocked"}))
+		events.append(base.merged({"type": &"blocked", "contact": guard_contact}))
 		return
 
 	target.hp = maxf(0.0, target.hp - dmg)
 	attacker.set_state(S.RECOVERY, ctx.ticks(w.recovery_time))
-	events.append(base.merged({"type": &"hit", "damage": dmg}))
+	events.append(base.merged({"type": &"hit", "damage": dmg, "contact": &"flesh", "lethal": target.hp <= 0.0}))
 	if target.hp <= 0.0:
 		target.set_state(S.DEAD)
 		events.append({"type": &"died", "id": target.id, "by": attacker.id})
