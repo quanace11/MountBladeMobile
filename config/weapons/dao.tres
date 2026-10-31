@@ -20,6 +20,6 @@ has_shield = false
 blade_color = Color(0.85, 0.85, 0.9, 1)
 shaft_color = Color(0.3, 0.07, 0.05, 1)
 shaft_length = 1.5
-blade_length = 0.8
+blade_length = 0.9
 blade_width = 0.14
 style = &"thanh_long"
