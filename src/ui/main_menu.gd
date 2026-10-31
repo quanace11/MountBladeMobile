@@ -30,6 +30,7 @@ func _ready() -> void:
 	box.add_child(title)
 
 	_row(box, "Trận", ConfigDB.matches, Game.match_id, func(id): Game.match_id = id)
+	_row(box, "Nhân vật", ConfigDB.models, Game.player_model_id, func(id): Game.player_model_id = id)
 	_row(box, "Tướng", ConfigDB.characters, Game.player_character_id, func(id): Game.player_character_id = id)
 	_row(box, "Độ khó bot", ConfigDB.bots, Game.bot_id, func(id): Game.bot_id = id)
 	_row(box, "Đồ họa", ConfigDB.qualities, Game.quality_id, func(id):
@@ -82,8 +83,6 @@ func _build_custom(parent: Control) -> void:
 		func(id): c.block_scheme = int(String(id)))
 	_row(_custom_box, "Trợ ngắm", {&"1": "Bật", &"0": "Tắt"}, &"1" if c.aim_assist else &"0",
 		func(id): c.aim_assist = id == &"1", [&"1", &"0"])
-	_row(_custom_box, "Tự đỡ đúng hướng", {&"1": "Bật", &"0": "Tắt"}, &"1" if c.auto_block else &"0",
-		func(id): c.auto_block = id == &"1", [&"1", &"0"])
 	_slider(_custom_box, "Độ nhạy xoay", 0.4, 2.5, 0.1, c.look_sensitivity, "x%.1f", func(v): c.look_sensitivity = v)
 	_slider(_custom_box, "Camera xa", 2.5, 6.0, 0.1, c.camera_distance, "%.1f m", func(v): c.camera_distance = v)
 	_slider(_custom_box, "Cỡ nút", 0.7, 1.4, 0.05, c.button_scale, "x%.2f", func(v): c.button_scale = v)
@@ -138,6 +137,20 @@ func _row(parent: Control, label: String, options: Dictionary, current: StringNa
 		b.button_group = group
 		b.button_pressed = StringName(id) == current
 		b.custom_minimum_size = Vector2(150, 56)
+		if opt is CharacterModel and opt.portrait:
+			b.icon = opt.portrait
+			b.expand_icon = true
+			b.custom_minimum_size = Vector2(180, 200)
+			b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			# Viền vàng quanh nhân vật đang chọn.
+			var sel := StyleBoxFlat.new()
+			sel.bg_color = Color(0.1, 0.07, 0.05)
+			sel.set_border_width_all(4)
+			sel.border_color = Color(0.95, 0.75, 0.3)
+			sel.set_corner_radius_all(4)
+			b.add_theme_stylebox_override("pressed", sel)
+			b.add_theme_stylebox_override("hover_pressed", sel)
 		b.add_theme_font_size_override("font_size", 22)
 		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(func(): on_pick.call(StringName(id)))

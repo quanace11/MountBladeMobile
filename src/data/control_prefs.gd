@@ -18,11 +18,8 @@ var camera_distance := 4.0
 var button_scale := 1.0
 ## Đang chém mà có địch gần tâm ngắm thì tự quay nhẹ về phía địch đó.
 var aim_assist := false
-## Tự đỡ đúng hướng (như tuỳ chọn "Block direction: Automatic" của Bannerlord): giữ nút ĐỠ là
-## giơ đỡ về phía đòn đang tới, không cần kéo chọn hướng.
-var auto_block := false
 
-const KEYS := ["free_aim", "attack_button", "block_scheme", "look_sensitivity", "camera_distance", "button_scale", "aim_assist", "auto_block"]
+const KEYS := ["free_aim", "attack_button", "block_scheme", "look_sensitivity", "camera_distance", "button_scale", "aim_assist"]
 
 
 static func preset(mode: int) -> ControlPrefs:

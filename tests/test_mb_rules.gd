@@ -113,14 +113,3 @@ func test_can_block_right_after_own_attack() -> void:
 	check_eq(a.state, FighterState.State.RECOVERY, "đang thu đao sau cú chém hụt")
 	sim.step({ids[0]: cmd(Dir.NONE, false, Dir.LEFT)})
 	check_eq(a.state, FighterState.State.BLOCK, "đang thu đao vẫn giơ đỡ được ngay")
-
-
-func test_auto_block_faces_incoming_attack() -> void:
-	var sim := make_sim()
-	var ids := face_off(sim, "dao_tuong", "dao_tuong", 1.6)
-	var src := PlayerCommandSource.new(null, func(): return 0.0)
-	src.fighter_id = ids[1]
-	check_eq(src._incoming_block_dir(sim.state), Dir.NONE, "chưa ai chém thì không tự chọn hướng")
-	sim.step({ids[0]: cmd(Dir.RIGHT, false)})
-	var want := CombatResolver.required_block_dir(sim.state.get_fighter(ids[0]), sim.state.get_fighter(ids[1]))
-	check_eq(src._incoming_block_dir(sim.state), want, "địch gồng chém ngang thì tự đỡ đúng bên")

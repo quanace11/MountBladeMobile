@@ -266,7 +266,8 @@ func _build() -> void:
 
 	if def.cape_color.a > 0.01:
 		var quad := QuadMesh.new()
-		quad.size = Vector2(0.44, 0.98)
+		# Hẹp hơn hai vai để nhìn từ sau vẫn thấy hai cánh tay.
+		quad.size = Vector2(0.3, 0.95)
 		_cape_mat = Mats.shader(CAPE, {"color": def.cape_color})
 		_mi(quad, _cape_mat, _chest, Vector3(0, -0.1, 0.22), Vector3(-8, 0, 0))
 
@@ -276,9 +277,9 @@ func _build() -> void:
 	merge_meshes(_head)
 
 	for side in [-1, 1]:
-		_upper_arm[side] = _mi(capsule(0.052, UPPER_ARM + 0.08), cloth, _body)
-		_forearm[side] = _mi(capsule(0.046, FOREARM + 0.06), leather, _body)
-		_hand_mesh[side] = _mi(box(Vector3(0.06, 0.1, 0.04)), skin, _body)
+		_upper_arm[side] = _mi(capsule(0.06, UPPER_ARM + 0.08), cloth, _body)
+		_forearm[side] = _mi(capsule(0.054, FOREARM + 0.06), leather, _body)
+		_hand_mesh[side] = _mi(box(Vector3(0.07, 0.1, 0.05)), skin, _body)
 		_thigh[side] = _mi(capsule(0.075, THIGH + 0.1), cloth, _body)
 		_shin[side] = _mi(capsule(0.06, SHIN + 0.08), leather, _body)
 		_foot[side] = _mi(box(Vector3(0.1, 0.07, 0.25)), leather, _body)

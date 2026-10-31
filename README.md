@@ -28,8 +28,7 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - **Tay phải**: nút **CHÉM** sát góc phải dưới: giữ và kéo về hướng muốn chém (nhân vật giơ vũ khí lấy đà theo hướng đó),
   nhả tay để chém; bấm không kéo là bổ. Lên = bổ từ trên, xuống = đâm, trái/phải = chém ngang.
   Nhả nút khi đang chém dở hoặc đang thu vũ khí thì game nhớ lệnh và chém tiếp ngay khi rảnh (chém liên hoàn).
-- Nút **ĐỠ** bên trái nút CHÉM: giữ và kéo về phía đòn đang đến. Bật *Tự đỡ đúng hướng* trong *Tự chỉnh*
-  (như "Block direction: Automatic" của Bannerlord) thì chỉ cần giữ, nhân vật tự đỡ về phía đòn đang tới.
+- Nút **ĐỠ** bên trái nút CHÉM: giữ và kéo về phía đòn đang đến (không có tự đỡ).
   Vừa chém xong, hoặc vũ khí vừa bị đỡ dội lại, vẫn giơ đỡ được ngay; chỉ khi bị chém trúng mới phải chờ.
   Kiểu vuốt cả vùng (trong *Tự chỉnh*) đỡ bằng nút ĐỠ hoặc nét gấp khúc `^` `<` `>` `v`, giữ ngón tay là giữ thế đỡ.
 - Đỡ về phía mình **thấy** vũ khí địch đang giơ. Game tự đổi hướng khi hai bên đối mặt
@@ -56,8 +55,9 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 ## Model 3D
 
-Tướng của người chơi dùng model `assets/models/tuongtrang/tuongtrang.scn` (khai báo ở `config/models/tuongtrang.tres`,
-gắn vào `player_model` trong `config/game_config.tres`). Model cần khung xương chuẩn UE5 (`pelvis`, `spine_02..04`,
+Người chơi chọn nhân vật ở dòng *Nhân vật* trong menu: mỗi file `config/models/<tên>.tres` là một lựa chọn
+(hiện có `tuong` giáp đen và `tuongtrang` giáp trắng). `player_model` trong `config/game_config.tres` là nhân vật mặc định
+khi chưa chọn. Model cần khung xương chuẩn UE5 (`pelvis`, `spine_02..04`,
 `upperarm_r`, `lowerarm_r`, `hand_r`, `thigh_l`, `calf_l`, `foot_l`...), không cần hoạt cảnh: `SkinnedRig` uốn xương
 theo đúng các khớp mà thân dựng bằng khối đang dùng. Vũ khí, khiên vẫn dựng bằng khối. Ảnh màu và ảnh pháp tuyến
 khai trong `albedo` / `normal` của file `.tres`; `height` là chiều cao model trong file để phóng cho cao 1,8 m.
@@ -66,7 +66,9 @@ Thêm model mới (xuất từ Character Creator: Target *Unreal (UE5 Skeleton)*
 1. Chép file `.fbx` vào `assets/models/<tên>/`, mở Godot một lần để nhập (ảnh nhúng được tách ra `<tên>_0.png`, `_1.png`).
 2. Gói thành cảnh gọn: `godot --headless --path . -s tools/pack_model.gd -- res://assets/models/<tên>/<tên>.fbx res://assets/models/<tên>/<tên>.scn`
    (bỏ hình biến dạng mặt và hoạt cảnh, tạo lại LOD; file fbx 58 MB còn 1,5 MB). File `.fbx` gốc không đưa lên repo.
-3. Tạo `config/models/<tên>.tres` như `tuongtrang.tres` và trỏ `player_model` tới nó.
+3. Tạo `config/models/<tên>.tres` như `tuongtrang.tres` (có `display_name`), nó tự hiện trong menu.
+4. Chụp ảnh chân dung cho nút chọn: `godot --path . --rendering-driver opengl3 -s tools/render_portraits.gd`
+   (cần màn hình, không chạy `--headless`), rồi gắn `assets/models/<tên>/portrait.png` vào `portrait`.
 
 Model cũ `tuong` (Tripo) vẫn còn: bản rig mất ảnh màu nên `tools/bake_textured_model.gd` ghép lưới có ảnh
 (`tuongdau.fbx`) vào khung xương của bản rig thành `tuong_textured.scn`.
