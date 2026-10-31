@@ -11,6 +11,8 @@ var _fps_label: Label
 var _mode_btn: Button
 var _end_panel: PanelContainer
 var _end_label: Label
+var _again_btn: Button
+var _next_btn: Button
 ## Thanh thể lực nháy đỏ khi bấm chém/lăn mà không đủ thể lực.
 var _stamina_flash := 0.0
 ## Viền đỏ khi bị chém trúng; máu thấp thì viền đỏ mờ luôn hiện.
@@ -50,6 +52,13 @@ func setup(p_runner: MatchRunner, p_quality: QualityManager) -> void:
 	_fps_label = Label.new()
 	_fps_label.add_theme_font_size_override("font_size", 18)
 	top.add_child(_fps_label)
+
+	if Game.tower_mode:
+		var floor_label := Label.new()
+		floor_label.text = "Tháp: tầng %d/%d" % [Game.tower_floor, Game.TOWER_FLOORS]
+		floor_label.add_theme_font_size_override("font_size", 22)
+		floor_label.add_theme_color_override("font_color", Color(0.95, 0.75, 0.3))
+		top.add_child(floor_label)
 
 	_mode_btn = _button("")
 	_mode_btn.pressed.connect(_cycle_mode)
@@ -130,9 +139,13 @@ func _build_end_panel() -> void:
 	_end_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_end_label.add_theme_font_size_override("font_size", 44)
 	box.add_child(_end_label)
-	var again := _button("Đánh lại")
-	again.pressed.connect(Game.start_match)
-	box.add_child(again)
+	_next_btn = _button("")
+	_next_btn.visible = false
+	_next_btn.pressed.connect(func(): Game.start_tower(Game.tower_floor + 1))
+	box.add_child(_next_btn)
+	_again_btn = _button("Đánh lại")
+	_again_btn.pressed.connect(Game.start_match)
+	box.add_child(_again_btn)
 	var menu := _button("Về menu")
 	menu.pressed.connect(Game.back_to_menu)
 	box.add_child(menu)
@@ -143,10 +156,23 @@ const END_PANEL_DELAY := 2.5
 
 
 func _on_match_over(winner_team: int) -> void:
+	var won := winner_team == 0
+	# Mở tầng tiếp ngay khi thắng, kể cả khi người chơi bấm Menu trước khi bảng kết thúc hiện.
+	if won:
+		Game.tower_cleared()
 	await get_tree().create_timer(END_PANEL_DELAY).timeout
 	if not is_inside_tree():
 		return
-	_end_label.text = "THẮNG!" if winner_team == 0 else "THUA"
+	_end_label.text = "THẮNG!" if won else "THUA"
+	if Game.tower_mode:
+		var top_floor := Game.tower_floor >= Game.TOWER_FLOORS
+		if won:
+			_end_label.text = "ĐÃ VƯỢT THÁP!" if top_floor else "QUA TẦNG %d!" % Game.tower_floor
+		else:
+			_end_label.text = "THUA Ở TẦNG %d" % Game.tower_floor
+		_next_btn.visible = won and not top_floor
+		_next_btn.text = "Lên tầng %d (1 đấu %d)" % [Game.tower_floor + 1, Game.tower_floor + 1]
+		_again_btn.text = "Đánh lại tầng %d" % Game.tower_floor
 	_end_panel.visible = true
 	_end_panel.reset_size()
 	_end_panel.position = (get_viewport_rect().size - _end_panel.size) * 0.5
