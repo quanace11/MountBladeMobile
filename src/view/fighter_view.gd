@@ -17,7 +17,7 @@ const SHOULDER := Vector3(0.2, 0.36, 0.0)
 const HIP_JOINT := Vector3(0.1, -0.02, 0.0)
 const UPPER_ARM := 0.29
 ## Lúc chạm đất khi ngã chết (đơn vị nhịp ngã).
-const DEATH_LAND := 0.85
+const DEATH_LAND := 0.75
 const FOREARM := 0.27
 const THIGH := 0.46
 const SHIN := 0.45
@@ -69,6 +69,11 @@ var _swing_from_edge := Vector3.LEFT
 var _swing_state := -1
 ## Tay trái nắm cán ở đâu (mét dọc cán tính từ tay phải, âm = phía đốc).
 var _grip_t := -0.35
+## Chỗ tay trái nắm cán cố định theo thế (mét dọc cán tính từ tay phải); 0 = tự nắm chỗ gần vai trái nhất.
+var _grip_pref := 0.0
+## Chết: độ hất chân lên (0..1) khi người bị chém lộn đi.
+var _death_kick := 0.0
+var _death_spin := 1.0
 var _body_scale := Vector3.ONE
 var _rig: SkinnedRig
 var _model_mesh: MeshInstance3D
@@ -634,7 +639,9 @@ func die(blow: Vector3) -> void:
 	_fall_dir = l.normalized() if l.length() > 0.01 else Vector3(0, 0, 1)
 	_death_t = 0.0
 	_dying = true
-	_death_side = 1.0 if randf() < 0.5 else -1.0
+	# Chém ngang thì lộn xoay về phía lưỡi đi; chém bổ, đâm thì xoay ít, bên nào cũng được.
+	_death_side = signf(l.x) if absf(l.x) > 0.2 else (1.0 if randf() < 0.5 else -1.0)
+	_death_spin = clampf(absf(_fall_dir.x) * 1.4, 0.35, 1.0)
 	_drop_weapon()
 
 
@@ -651,36 +658,40 @@ func _drop_weapon() -> void:
 	_drop_spin = Vector3(randf_range(2.0, 4.0), randf_range(-2.0, 2.0), randf_range(-3.0, 3.0))
 
 
-## Ngã như Bannerlord: giật người theo đường chém, khuỵu gối gục đầu, đổ theo hướng đòn (nhanh dần như rơi)
-## vừa đổ vừa xoay người, tay văng ngược lên; chạm đất thì nảy nhẹ, tay dang, đầu ngoẹo sang bên.
+## Ngã kiểu phim võ hiệp Hồng Kông: bị nhát chém hất bay lên, người vừa đổ theo hướng lưỡi đi vừa lộn
+## xoay quanh thân (chém ngang thì lộn nhiều), hai chân đá hất lên trời, tay văng ra; rơi xuống đất nảy
+## nhẹ, trượt thêm một đoạn rồi nằm dang tay.
 func _update_death(delta: float) -> void:
 	_death_t += delta * (0.6 / maxf(0.01, poses.death_fall_time))
 	var t := _death_t
 	var axis := Vector3.UP.cross(_fall_dir).normalized()
-	var jerk := smoothstep(0.0, 0.07, t) * (1.0 - smoothstep(0.15, 0.45, t))
-	var buckle := smoothstep(0.05, 0.4, t)
-	var f := clampf((t - 0.28) / (DEATH_LAND - 0.28), 0.0, 1.0)
-	var angle := deg_to_rad(88.0) * f * f
+	var jerk := smoothstep(0.0, 0.06, t) * (1.0 - smoothstep(0.1, 0.3, t))
+	var u := clampf((t - 0.05) / (DEATH_LAND - 0.05), 0.0, 1.0)
+	var air := sin(PI * u) if t < DEATH_LAND else 0.0
+	var angle := deg_to_rad(90.0) * pow(u, 1.4)
+	var lift := 0.42 * air
 	var settle := 0.0
 	if t > DEATH_LAND:
-		var b := (t - DEATH_LAND) / 0.4
-		angle -= deg_to_rad(8.0) * sin(PI * minf(b, 1.0)) * maxf(0.0, 1.0 - b * 0.5)
+		var b := (t - DEATH_LAND) / 0.45
+		var bounce := sin(PI * minf(b, 1.0)) * maxf(0.0, 1.0 - b)
+		angle -= deg_to_rad(10.0) * bounce
+		lift += 0.07 * bounce
 		settle = smoothstep(0.0, 1.0, b)
-	var twist := deg_to_rad(28.0) * _death_side * smoothstep(0.1, DEATH_LAND, t)
-	var slide := _fall_dir * (0.08 * jerk + 0.3 * smoothstep(0.3, DEATH_LAND + 0.15, t))
+	var twist := deg_to_rad(170.0) * _death_side * _death_spin * smoothstep(0.03, DEATH_LAND, t)
+	var slide := _fall_dir * 0.95 * smoothstep(0.0, DEATH_LAND + 0.25, t)
 	_body.transform = Transform3D(Basis(axis, angle) * Basis(Vector3.UP, twist) * Basis.from_scale(_body_scale),
-		slide + Vector3(0, -0.1 * buckle * (1.0 - f), 0))
-	_pelvis.position.y -= 0.42 * buckle * (1.0 - f * 0.95)
-	_chest.basis = Basis(axis, 0.45 * jerk + 0.15 * f) * Basis(Vector3.RIGHT, 0.4 * buckle * (1.0 - f))
-	_head.basis = Basis(axis, 0.6 * jerk + 0.25 * f) * Basis(Vector3.UP, 0.7 * settle * _death_side) \
-		* Basis(Vector3.RIGHT, 0.35 * buckle * (1.0 - f))
-	var fling := smoothstep(0.03, 0.4, t)
-	var trail := -_fall_dir * 0.3
+		slide + Vector3(0, lift, 0))
+	_death_kick = maxf(air, _death_kick - delta * 4.0) if t < DEATH_LAND + 0.3 else lerpf(_death_kick, 0.0, 1.0 - exp(-6.0 * delta))
+	# Thân giật theo đòn rồi ưỡn ngược lại khi bay, đầu ngửa; nằm rồi thì đầu ngoẹo sang bên.
+	_chest.basis = Basis(axis, 0.5 * jerk - 0.35 * air)
+	_head.basis = Basis(axis, 0.7 * jerk - 0.4 * air + 0.2 * settle) * Basis(Vector3.UP, 0.7 * settle * _death_side)
+	var fling := smoothstep(0.02, 0.25, t)
+	var trail := -_fall_dir * 0.35 + Vector3(0, 0.25, 0) * air
 	# Nằm rồi thì tay rũ xuống đất (phía ngã là phía mặt đất).
 	var ground := _fall_dir * 0.2
-	var r := (Vector3(0.42, 1.2, -0.05) + trail).lerp(Vector3(0.6, 1.2, 0.0) + ground, settle)
-	var l := (Vector3(-0.42, 1.25, -0.02) + trail).lerp(Vector3(-0.58, 1.3, 0.0) + ground, settle)
-	var k := 1.0 - exp(-9.0 * delta)
+	var r := (Vector3(0.5, 1.3, -0.05) + trail).lerp(Vector3(0.6, 1.2, 0.0) + ground, settle)
+	var l := (Vector3(-0.5, 1.32, -0.02) + trail).lerp(Vector3(-0.58, 1.3, 0.0) + ground, settle)
+	var k := 1.0 - exp(-12.0 * delta)
 	_hand.position = _hand.position.lerp(Vector3(0.28, 0.9, -0.2).lerp(r, fling), k)
 	_left_hand_target = _left_hand_target.lerp(Vector3(-0.28, 0.9, -0.2).lerp(l, fling), k)
 	if _dropped and not _drop_landed:
@@ -744,6 +755,8 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 				speed *= poses.strike_blend_mult
 			else:
 				pose = "stagger"
+	# Đỡ trái/phải: tay phải ở trên ngang vai, tay trái nắm phía dưới giữ cán dựng thẳng.
+	_grip_pref = -0.3 if cur.state == S.BLOCK and (cur.block_dir == Dir.LEFT or cur.block_dir == Dir.RIGHT) else 0.0
 	var target: Array = poses.get_pose(pose)
 	_hand.position -= _kick_applied
 	var tb := Basis.from_euler(target[1] * (PI / 180.0))
@@ -938,6 +951,9 @@ func _update_limbs() -> void:
 		var stance := Vector3(0.13 * side, ANKLE_HEIGHT, 0.1 * side * (1.0 - _gait_amount))
 		var foot := stance + move_dir * (c[0] as float) * reach
 		foot.y += (c[1] as float) * lift
+		if _death_kick > 0.0:
+			# Bị chém lộn đi: hai chân hất lên về phía ngược hướng ngã, chân này cao hơn chân kia.
+			foot += (Vector3(0, 0.5 + 0.12 * side * _death_side, 0) - _fall_dir * 0.35) * _death_kick
 		foot_pitch[side] = (c[2] as float) * _gait_amount
 		var hip := pelvis * Vector3(HIP_JOINT.x * side, HIP_JOINT.y, HIP_JOINT.z)
 		feet[side] = foot + Vector3(0, _rig_ankle_offset, 0)
@@ -961,6 +977,8 @@ func _update_limbs() -> void:
 		var t := clampf((l_sh - _hand.position).dot(y), -poses.two_hand_grip, poses.two_hand_grip)
 		if absf(t) < poses.two_hand_grip_min:
 			t = poses.two_hand_grip_min * (1.0 if t >= 0.0 else -1.0)
+		if _grip_pref != 0.0:
+			t = _grip_pref
 		_grip_t = lerpf(_grip_t, t, 0.35)
 		if absf(_grip_t) < poses.two_hand_grip_min * 0.5:
 			_grip_t = t
