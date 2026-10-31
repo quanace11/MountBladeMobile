@@ -16,6 +16,13 @@ var fps_cap_30: bool = false
 var control_mode: int = ControlPrefs.Mode.FREE
 var custom_controls := ControlPrefs.new()
 
+## Chế độ vượt tháp (PvE): tầng N đấu 1 vs N, thắng thì lên tầng tiếp, tới tầng TOWER_FLOORS.
+const TOWER_FLOORS := 10
+var tower_mode: bool = false
+var tower_floor: int = 1
+## Tầng cao nhất đã qua (0 = chưa qua tầng nào). Được chọn mọi tầng tới tower_best + 1.
+var tower_best: int = 0
+
 
 func _ready() -> void:
 	custom_controls.block_scheme = ConfigDB.input.block_scheme
@@ -24,7 +31,21 @@ func _ready() -> void:
 
 
 func current_match() -> MatchDef:
+	if tower_mode:
+		return tower_match(tower_floor)
 	return ConfigDB.matches.get(match_id)
+
+
+## Trận của một tầng tháp: tầng n có n địch, lần lượt các tướng trong config/characters.
+func tower_match(floor_no: int) -> MatchDef:
+	var keys := ConfigDB.sorted_keys(ConfigDB.characters)
+	var md := MatchDef.new()
+	md.id = StringName("tower_%d" % floor_no)
+	md.display_name = "Tầng %d: 1 đấu %d" % [floor_no, floor_no]
+	md.player_character = ConfigDB.characters.get(player_character_id, ConfigDB.characters[keys[0]])
+	for i in floor_no:
+		md.enemy_characters.append(ConfigDB.characters[keys[(i + 1) % keys.size()]])
+	return md
 
 
 func current_bot() -> BotProfile:
@@ -60,6 +81,26 @@ func start_match() -> void:
 	get_tree().change_scene_to_file(MATCH_SCENE)
 
 
+## Vào trận thường (chọn ở dòng "Trận" trong menu).
+func start_normal_match() -> void:
+	tower_mode = false
+	start_match()
+
+
+## Vào một tầng tháp (chỉ được chọn tầng đã mở).
+func start_tower(floor_no: int) -> void:
+	tower_mode = true
+	tower_floor = clampi(floor_no, 1, mini(tower_best + 1, TOWER_FLOORS))
+	start_match()
+
+
+## Gọi khi thắng một tầng: mở khoá tầng tiếp theo.
+func tower_cleared() -> void:
+	if tower_mode and tower_floor > tower_best:
+		tower_best = tower_floor
+		save_settings()
+
+
 func back_to_menu() -> void:
 	get_tree().change_scene_to_file(MENU_SCENE)
 
@@ -73,6 +114,7 @@ func save_settings() -> void:
 	cfg.set_value("game", "quality", quality_id)
 	cfg.set_value("game", "fps30", fps_cap_30)
 	cfg.set_value("game", "control_mode", control_mode)
+	cfg.set_value("game", "tower_best", tower_best)
 	custom_controls.save(cfg, "custom_controls")
 	cfg.save(SETTINGS_PATH)
 
@@ -88,4 +130,5 @@ func _load_settings() -> void:
 	quality_id = cfg.get_value("game", "quality", quality_id)
 	fps_cap_30 = cfg.get_value("game", "fps30", fps_cap_30)
 	control_mode = cfg.get_value("game", "control_mode", control_mode)
+	tower_best = clampi(cfg.get_value("game", "tower_best", tower_best), 0, TOWER_FLOORS)
 	custom_controls.load_from(cfg, "custom_controls")

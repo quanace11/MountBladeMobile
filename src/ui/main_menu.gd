@@ -57,8 +57,10 @@ func _ready() -> void:
 	start.text = "VÀO TRẬN"
 	start.custom_minimum_size = Vector2(280, 72)
 	start.add_theme_font_size_override("font_size", 30)
-	start.pressed.connect(Game.start_match)
+	start.pressed.connect(Game.start_normal_match)
 	box.add_child(start)
+
+	_build_tower(box)
 
 	var help := Label.new()
 	help.text = "Tay trái: joystick di chuyển. Tay phải: giữ nút CHÉM và kéo về hướng muốn chém (lên = bổ, xuống = đâm, trái/phải = chém ngang), nhả để chém. Giữ nút ĐỠ và kéo về phía đòn đến. Tự xoay: kéo ngang chỗ trống bên phải để xoay người, chấm giữa màn hình là chỗ đang nhìn (đỏ = địch trong tầm chém).\nKhoá địch gần: tự quay về địch gần nhất, camera bám sau lưng.\nPC: WASD đi, Q/E xoay người, giữ I/J/K/L để gồng rồi nhả để chém, giữ phím mũi tên để đỡ."
@@ -66,6 +68,32 @@ func _ready() -> void:
 	help.add_theme_font_size_override("font_size", 18)
 	help.add_theme_color_override("font_color", Color(0.85, 0.8, 0.7))
 	box.add_child(help)
+
+
+## Vượt tháp: tầng N đấu 1 vs N. Tầng chưa mở thì khoá, thắng tầng trước mới mở tầng sau.
+func _build_tower(parent: Control) -> void:
+	var head := Label.new()
+	head.text = "VƯỢT THÁP  ·  đã qua %d/%d tầng" % [Game.tower_best, Game.TOWER_FLOORS]
+	head.add_theme_font_size_override("font_size", 28)
+	head.add_theme_color_override("font_color", Color(0.95, 0.75, 0.3))
+	parent.add_child(head)
+	var grid := GridContainer.new()
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	parent.add_child(grid)
+	var open_floor := mini(Game.tower_best + 1, Game.TOWER_FLOORS)
+	for n in range(1, Game.TOWER_FLOORS + 1):
+		var b := Button.new()
+		b.text = "Tầng %d\n1 vs %d" % [n, n]
+		if n <= Game.tower_best:
+			b.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
+		b.disabled = n > open_floor
+		b.custom_minimum_size = Vector2(150, 72)
+		b.add_theme_font_size_override("font_size", 20)
+		b.focus_mode = Control.FOCUS_NONE
+		b.pressed.connect(func(): Game.start_tower(n))
+		grid.add_child(b)
 
 
 ## Các tuỳ chỉnh cho chế độ "Tự chỉnh". Chỉ hiện khi chọn chế độ đó.

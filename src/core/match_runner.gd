@@ -4,6 +4,7 @@ extends Node3D
 ## Chạy sim theo tick cố định; hình ảnh nội suy giữa hai tick.
 
 const MAX_STEPS_PER_FRAME := 5
+const ENEMIES_PER_ROW := 5
 
 var sim: MatchSim
 var sources: Array[CommandSource] = []
@@ -28,10 +29,13 @@ func _ready() -> void:
 	var md := Game.current_match()
 	var half := cfg.spawn_distance * 0.5
 	player_id = sim.add_fighter(Game.player_character(), 0, Vector2(0, half), FighterState.yaw_from_direction(Vector2(0, -1)))
+	# Địch đứng thành hàng ngang, mỗi hàng tối đa ENEMIES_PER_ROW người, hàng sau lùi xa hơn.
 	var n := md.enemy_characters.size()
 	for i in n:
-		var spread := (i - (n - 1) * 0.5) * 2.0
-		sim.add_fighter(md.enemy_characters[i], 1, Vector2(spread, -half), FighterState.yaw_from_direction(Vector2(0, 1)))
+		var row := i / ENEMIES_PER_ROW
+		var in_row := mini(n - row * ENEMIES_PER_ROW, ENEMIES_PER_ROW)
+		var spread := (i % ENEMIES_PER_ROW - (in_row - 1) * 0.5) * 2.0
+		sim.add_fighter(md.enemy_characters[i], 1, Vector2(spread, -half - row * 2.5), FighterState.yaw_from_direction(Vector2(0, 1)))
 
 	ArenaBuilder.build(self, cfg, quality, ConfigDB.arena)
 

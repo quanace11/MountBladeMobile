@@ -32,3 +32,9 @@ func test_bot_1v1_finishes() -> void:
 func test_bot_1v3_finishes() -> void:
 	var sim := _bot_match(3)
 	check(sim.state.finished, "trận 1 vs 3 giữa các bot phải kết thúc trong 5 phút")
+
+
+## Tầng cao nhất của chế độ vượt tháp.
+func test_bot_1v10_finishes() -> void:
+	var sim := _bot_match(10)
+	check(sim.state.finished, "trận 1 vs 10 (tầng 10 của tháp) phải kết thúc trong 5 phút")

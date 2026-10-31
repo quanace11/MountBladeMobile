@@ -6,6 +6,8 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 
 - Godot 4.6, GDScript, renderer Compatibility (nhẹ, chạy được trên nhiều máy Android).
 - Chơi với bot: 1 vs 1 đến 1 vs 4, bot dễ hoặc khó.
+- **Vượt tháp** (PvE): tầng 1 đấu 1 vs 1, thắng thì lên tầng 2 đấu 1 vs 2, cứ thế tới tầng 10 đấu 1 vs 10.
+  Mỗi tầng hồi đầy máu. Chỉ chọn được tầng đã mở, tiến độ lưu trong máy. Địch lần lượt là đao, kiếm, thương tướng.
 
 ## Chạy thử
 
