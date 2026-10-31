@@ -29,6 +29,9 @@ extends Resource
 @export var shaft_length: float = 1.2
 @export var blade_length: float = 0.6
 @export var blade_width: float = 0.08
+## Kiểu dáng riêng khi vẽ: &"thanh_long" (Thanh Long Yển Nguyệt Đao), &"xa_mau" (Trượng Bát Xà Mâu),
+## để trống thì vẽ kiếm / đao / giáo thường theo kích thước.
+@export var style: StringName = &""
 
 
 func damage_for(dir: int) -> float:

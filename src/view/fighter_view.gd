@@ -395,7 +395,11 @@ func _build_weapon(w: WeaponDef, metal: Material, gold: Material, red: Material)
 	var below := w.shaft_length * (0.25 if w.has_shield or w.shaft_length < 0.5 else 0.42)
 	var above := w.shaft_length - below
 	_mi(cyl(0.02, 0.022, w.shaft_length, 8), shaft, root, Vector3(0, (above - below) * 0.5, 0))
-	if w.has_shield or w.shaft_length < 0.5:
+	if w.style == &"thanh_long":
+		_build_thanh_long(w, root, above, below, blade, gold)
+	elif w.style == &"xa_mau":
+		_build_xa_mau(w, root, above, below, blade, gold, red)
+	elif w.has_shield or w.shaft_length < 0.5:
 		# Kiếm: chuôi quấn da, đốc, lưỡi thẳng, mũi nhọn.
 		_mi(box(Vector3(0.16, 0.025, 0.04)), gold, root, Vector3(0, above, 0))
 		_mi(sphere(0.025, 0.04), gold, root, Vector3(0, -below, 0))
@@ -423,6 +427,82 @@ func _build_weapon(w: WeaponDef, metal: Material, gold: Material, red: Material)
 		_mi(cyl(0.028, 0.024, 0.08, 8), gold, root, Vector3(0, above - 0.02, 0))
 		_mi(cyl(0.08, 0.015, 0.2, 8), red, root, Vector3(0, above - 0.14, 0), Vector3(180, 0, 0))
 	return root
+
+
+## Thanh Long Yển Nguyệt Đao: lưỡi trăng khuyết to bản, sống có ngạnh, đầu rồng xanh ngậm chân lưỡi,
+## đai đồng trên cán, mũi nhọn ở đốc. Lưỡi sắc quay về -x.
+func _build_thanh_long(w: WeaponDef, root: Node3D, above: float, below: float, blade: Material, gold: Material) -> void:
+	var k := w.blade_length / 0.82
+	var outline := PackedVector2Array()
+	for p in [Vector2(-0.05, 0), Vector2(-0.11, 0.14), Vector2(-0.145, 0.32), Vector2(-0.14, 0.5),
+			Vector2(-0.1, 0.65), Vector2(-0.03, 0.76), Vector2(0.06, 0.82), Vector2(0.045, 0.7),
+			Vector2(0.035, 0.56), Vector2(0.1, 0.5), Vector2(0.035, 0.44), Vector2(0.03, 0.24), Vector2(0.035, 0.0)]:
+		outline.append(Vector2(p.x * k * 1.25, p.y * k))
+	_mi(flat_mesh(outline, 0.014), blade, root, Vector3(0, above + 0.04, 0))
+	var green := Mats.color(Color(0.1, 0.42, 0.22), 0.45, 0.6)
+	# Đầu rồng: đầu dài hướng lên ngậm lưỡi, hai sừng, bờm gai phía sống.
+	_mi(capsule(0.042, 0.17), green, root, Vector3(0.005, above + 0.02, 0), Vector3(0, 0, 8), Vector3(1, 1, 0.8))
+	_mi(cyl(0.012, 0.03, 0.1, 6), green, root, Vector3(-0.02, above + 0.11, 0), Vector3(0, 0, 25))
+	for z in [-1.0, 1.0]:
+		_mi(cyl(0.0, 0.012, 0.09, 5), gold, root, Vector3(0.03, above + 0.08, 0.02 * z), Vector3(20 * z, 0, -40))
+		_mi(sphere(0.01, 0.02), gold, root, Vector3(-0.015, above + 0.06, 0.035 * z))
+	for i in 4:
+		var mane := PrismMesh.new()
+		mane.size = Vector3(0.05, 0.05, 0.01)
+		_mi(mane, green, root, Vector3(0.045, above - 0.05 + i * 0.045, 0), Vector3(0, 0, -70))
+	_mi(cyl(0.032, 0.032, 0.05, 10), gold, root, Vector3(0, above - 0.1, 0))
+	for t in [0.3, 0.6]:
+		_mi(cyl(0.026, 0.026, 0.03, 8), gold, root, Vector3(0, above - (above + below) * t, 0))
+	_mi(cyl(0.0, 0.026, 0.14, 6), gold, root, Vector3(0, -below - 0.07, 0), Vector3(180, 0, 0))
+
+
+## Trượng Bát Xà Mâu: mũi dài uốn lượn như thân rắn, cổ đồng, tua đỏ, cán đen.
+func _build_xa_mau(w: WeaponDef, root: Node3D, above: float, below: float, blade: Material, gold: Material, red: Material) -> void:
+	var left := PackedVector2Array()
+	var right := PackedVector2Array()
+	var n := 16
+	for i in n + 1:
+		var t := float(i) / n
+		var y := t * w.blade_length
+		var cx := 0.045 * sin(t * TAU * 1.5) * (1.0 - t * 0.6)
+		var half := w.blade_width * 0.5 * (1.0 - t) * (0.75 + 0.25 * cos(t * TAU * 1.5))
+		left.append(Vector2(cx - half, y))
+		right.append(Vector2(cx + half, y))
+	right.reverse()
+	left.append_array(right)
+	_mi(flat_mesh(left, 0.016), blade, root, Vector3(0, above + 0.03, 0))
+	_mi(cyl(0.024, 0.03, 0.09, 8), gold, root, Vector3(0, above - 0.01, 0))
+	_mi(sphere(0.034, 0.05), gold, root, Vector3(0, above - 0.07, 0))
+	_mi(cyl(0.09, 0.015, 0.22, 8), red, root, Vector3(0, above - 0.18, 0), Vector3(180, 0, 0))
+	_mi(cyl(0.024, 0.02, 0.06, 8), gold, root, Vector3(0, -below, 0))
+
+
+## Tấm phẳng dày thickness theo đường viền (mặt phẳng xy, đều về hai phía z).
+static func flat_mesh(outline: PackedVector2Array, thickness: float) -> ArrayMesh:
+	var tris := Geometry2D.triangulate_polygon(outline)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var hz := thickness * 0.5
+	for side in [1.0, -1.0]:
+		st.set_normal(Vector3(0, 0, side))
+		for i in range(0, tris.size(), 3):
+			var order := [0, 1, 2] if side > 0.0 else [0, 2, 1]
+			for o in order:
+				var p := outline[tris[i + o]]
+				st.add_vertex(Vector3(p.x, p.y, hz * side))
+	# Viền: hướng pháp tuyến ra ngoài tuỳ chiều đường viền.
+	var ccw := Geometry2D.is_polygon_clockwise(outline) == false
+	for i in outline.size():
+		var a := outline[i]
+		var b := outline[(i + 1) % outline.size()]
+		var e := (b - a).normalized()
+		var nrm := Vector3(e.y, -e.x, 0) if ccw else Vector3(-e.y, e.x, 0)
+		st.set_normal(nrm)
+		var q := [Vector3(a.x, a.y, hz), Vector3(a.x, a.y, -hz), Vector3(b.x, b.y, -hz), Vector3(b.x, b.y, hz)]
+		for j in ([0, 1, 2, 0, 2, 3] if ccw else [0, 2, 1, 0, 3, 2]):
+			st.add_vertex(q[j])
+	st.index()
+	return st.commit()
 
 
 # ---------------------------------------------------------------- cập nhật mỗi khung
