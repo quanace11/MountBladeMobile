@@ -31,10 +31,15 @@ extends Resource
 @export_group("Đỡ")
 @export var block_up_pos := Vector3(0.3, 1.78, -0.3)
 @export var block_up_rot := Vector3(0, 180, -87)
-@export var block_left_pos := Vector3(-0.08, 1.42, -0.3)
+@export var block_left_pos := Vector3(-0.24, 1.44, -0.33)
 @export var block_left_rot := Vector3(0, -90, 0)
-@export var block_right_pos := Vector3(0.16, 1.42, -0.28)
+@export var block_right_pos := Vector3(0.32, 1.46, -0.32)
 @export var block_right_rot := Vector3(0, -90, 0)
+## Đỡ trái/phải: thân trên xoay vai về phía cán để hai tay cùng nắm được (độ, dương = xoay sang trái).
+@export var block_left_twist_deg := 30.0
+@export var block_right_twist_deg := -45.0
+## Tay dưới nắm cách tay trên bao xa dọc cán khi đỡ trái/phải.
+@export var block_side_grip := 0.24
 @export var block_thrust_pos := Vector3(0.25, 1.0, -0.4)
 @export var block_thrust_rot := Vector3(72, -90, 6)
 @export_group("Khác")

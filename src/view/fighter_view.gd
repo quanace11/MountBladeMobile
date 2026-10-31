@@ -756,7 +756,7 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 			else:
 				pose = "stagger"
 	# Đỡ trái/phải: tay phải ở trên ngang vai, tay trái nắm phía dưới giữ cán dựng thẳng.
-	_grip_pref = -0.3 if cur.state == S.BLOCK and (cur.block_dir == Dir.LEFT or cur.block_dir == Dir.RIGHT) else 0.0
+	_grip_pref = -poses.block_side_grip if cur.state == S.BLOCK and (cur.block_dir == Dir.LEFT or cur.block_dir == Dir.RIGHT) else 0.0
 	var target: Array = poses.get_pose(pose)
 	_hand.position -= _kick_applied
 	var tb := Basis.from_euler(target[1] * (PI / 180.0))
@@ -862,6 +862,10 @@ func _update_torso(cur: FighterState, delta: float) -> void:
 				Dir.UP: lean = -ln * 1.5
 		S.BLOCK:
 			lean = -ln * 0.4 + ln * 0.6 * _jolt
+			# Đỡ trái/phải: xoay vai về phía cán cho tay kia với tới, hai tay cùng nắm.
+			match cur.block_dir:
+				Dir.LEFT: twist = deg_to_rad(poses.block_left_twist_deg)
+				Dir.RIGHT: twist = deg_to_rad(poses.block_right_twist_deg)
 		S.STAGGER:
 			if cur.recoil:
 				match cur.attack_dir:
