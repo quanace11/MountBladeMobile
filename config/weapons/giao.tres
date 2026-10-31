@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_w")
 id = &"giao"
-display_name = "Trường mâu"
+display_name = "Trượng Bát Xà Mâu"
 reach = 2.6
 arc_half_angle_deg = 35.0
 windup_time = 0.4
@@ -18,7 +18,8 @@ damage_thrust = 40.0
 attack_stamina_cost = 11.0
 has_shield = false
 blade_color = Color(0.8, 0.8, 0.85, 1)
-shaft_color = Color(0.4, 0.26, 0.12, 1)
+shaft_color = Color(0.1, 0.08, 0.07, 1)
 shaft_length = 2.2
-blade_length = 0.35
-blade_width = 0.07
+blade_length = 0.55
+blade_width = 0.16
+style = &"xa_mau"

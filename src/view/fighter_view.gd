@@ -16,6 +16,8 @@ const CHEST_OFFSET := 0.12
 const SHOULDER := Vector3(0.2, 0.36, 0.0)
 const HIP_JOINT := Vector3(0.1, -0.02, 0.0)
 const UPPER_ARM := 0.29
+## Lúc chạm đất khi ngã chết (đơn vị nhịp ngã).
+const DEATH_LAND := 0.85
 const FOREARM := 0.27
 const THIGH := 0.46
 const SHIN := 0.45
@@ -82,6 +84,9 @@ var _dropped: Node3D
 var _drop_vel := Vector3.ZERO
 var _drop_spin := Vector3.ZERO
 var _drop_landed := false
+## Đang chết: hai tay buông khỏi cán; người xoay về bên này khi đổ (1 hoặc -1).
+var _dying := false
+var _death_side := 1.0
 var _twist := 0.0
 var _lean := 0.0
 
@@ -395,7 +400,11 @@ func _build_weapon(w: WeaponDef, metal: Material, gold: Material, red: Material)
 	var below := w.shaft_length * (0.25 if w.has_shield or w.shaft_length < 0.5 else 0.42)
 	var above := w.shaft_length - below
 	_mi(cyl(0.02, 0.022, w.shaft_length, 8), shaft, root, Vector3(0, (above - below) * 0.5, 0))
-	if w.has_shield or w.shaft_length < 0.5:
+	if w.style == &"thanh_long":
+		_build_thanh_long(w, root, above, below, blade, gold)
+	elif w.style == &"xa_mau":
+		_build_xa_mau(w, root, above, below, blade, gold, red)
+	elif w.has_shield or w.shaft_length < 0.5:
 		# Kiếm: chuôi quấn da, đốc, lưỡi thẳng, mũi nhọn.
 		_mi(box(Vector3(0.16, 0.025, 0.04)), gold, root, Vector3(0, above, 0))
 		_mi(sphere(0.025, 0.04), gold, root, Vector3(0, -below, 0))
@@ -423,6 +432,143 @@ func _build_weapon(w: WeaponDef, metal: Material, gold: Material, red: Material)
 		_mi(cyl(0.028, 0.024, 0.08, 8), gold, root, Vector3(0, above - 0.02, 0))
 		_mi(cyl(0.08, 0.015, 0.2, 8), red, root, Vector3(0, above - 0.14, 0), Vector3(180, 0, 0))
 	return root
+
+
+## Thanh Long Yển Nguyệt Đao: lưỡi to bản bụng tròn, mũi cong ngược, sống lưỡi khoét hình trăng khuyết
+## có ngạnh nhọn, rồng xanh khắc trên lưỡi, đầu rồng ngậm chân lưỡi, tua đỏ, đai đồng, mũi đốc.
+## Lưỡi sắc quay về -x.
+func _build_thanh_long(w: WeaponDef, root: Node3D, above: float, below: float, _blade: Material, gold: Material) -> void:
+	var steel := Mats.color(Color(0.8, 0.82, 0.86), 0.3, 0.55)
+	var edge_mat := Mats.color(Color(0.97, 0.97, 1.0), 0.15, 0.4)
+	var green := Mats.color(Color(0.1, 0.55, 0.28), 0.45, 0.2)
+	var red := Mats.color(Color(0.75, 0.05, 0.04), 0.9)
+	var k := w.blade_length / 0.9
+	var base := above + 0.07
+	# Lưỡi sắc (từ chân lên mũi) rồi sống lưỡi (từ mũi xuống chân).
+	var edge := [Vector2(-0.04, 0.0), Vector2(-0.1, 0.08), Vector2(-0.15, 0.2), Vector2(-0.175, 0.35),
+		Vector2(-0.178, 0.5), Vector2(-0.162, 0.63), Vector2(-0.12, 0.75), Vector2(-0.06, 0.84),
+		Vector2(0.02, 0.9), Vector2(0.075, 0.915)]
+	var spine := [Vector2(0.05, 0.85), Vector2(0.04, 0.75), Vector2(0.06, 0.67), Vector2(0.15, 0.63),
+		Vector2(0.07, 0.6), Vector2(0.025, 0.56), Vector2(0.005, 0.51), Vector2(0.005, 0.46),
+		Vector2(0.025, 0.42), Vector2(0.08, 0.4), Vector2(0.045, 0.36), Vector2(0.035, 0.2), Vector2(0.04, 0.0)]
+	var outline := PackedVector2Array()
+	for p in edge + spine:
+		outline.append(p * k)
+	_mi(flat_mesh(outline, 0.014), steel, root, Vector3(0, base, 0))
+	# Đường lưỡi sáng chạy dọc mép sắc.
+	var rim := PackedVector2Array()
+	for i in range(1, 9):
+		rim.append((edge[i] as Vector2) * k)
+	for i in range(8, 0, -1):
+		var e: Vector2 = edge[i]
+		rim.append(Vector2(e.x + 0.035, e.y - 0.012 * float(i < 8)) * k)
+	_mi(flat_mesh(rim, 0.017), edge_mat, root, Vector3(0, base, 0))
+	# Rồng xanh khắc trên lưỡi: thân lượn từ chân lên giữa lưỡi.
+	var body_l := PackedVector2Array()
+	var body_r := PackedVector2Array()
+	for i in 13:
+		var t := i / 12.0
+		var c := Vector2(-0.06 + 0.035 * sin(t * TAU * 1.3), 0.08 + t * 0.55)
+		var hw := 0.028 * (1.0 - t * 0.6)
+		body_l.append((c + Vector2(-hw, 0)) * k)
+		body_r.append((c + Vector2(hw, 0)) * k)
+	body_r.reverse()
+	body_l.append_array(body_r)
+	_mi(flat_mesh(body_l, 0.018), green, root, Vector3(0, base, 0))
+	# Đầu rồng ngậm chân lưỡi: đầu, hàm trên, hàm dưới há về phía lưỡi sắc, mắt, sừng, râu, bờm.
+	_mi(capsule(0.045, 0.16), green, root, Vector3(0.012, above + 0.02, 0), Vector3(0, 0, -6), Vector3(1, 1, 0.85))
+	_mi(box(Vector3(0.05, 0.11, 0.05)), green, root, Vector3(-0.035, above + 0.085, 0), Vector3(0, 0, 32))
+	_mi(box(Vector3(0.04, 0.08, 0.045)), green, root, Vector3(-0.04, above + 0.02, 0), Vector3(0, 0, 70))
+	_mi(box(Vector3(0.02, 0.02, 0.05)), gold, root, Vector3(-0.072, above + 0.115, 0))
+	for z in [-1.0, 1.0]:
+		_mi(sphere(0.011, 0.022), gold, root, Vector3(-0.01, above + 0.07, 0.03 * z))
+		_mi(cyl(0.0, 0.012, 0.12, 5), gold, root, Vector3(0.05, above + 0.1, 0.022 * z), Vector3(18 * z, 0, -55))
+		_mi(cyl(0.003, 0.004, 0.14, 4), gold, root, Vector3(-0.09, above + 0.06, 0.03 * z), Vector3(25 * z, 0, 60))
+	for i in 5:
+		var mane := PrismMesh.new()
+		mane.size = Vector3(0.045, 0.06, 0.012)
+		_mi(mane, green, root, Vector3(0.05, above - 0.07 + i * 0.035, 0), Vector3(0, 0, -75))
+	# Vòng đồng, tua đỏ xoè dưới đầu rồng, các đai trên cán, mũi đốc.
+	_mi(cyl(0.034, 0.034, 0.04, 10), gold, root, Vector3(0, above - 0.1, 0))
+	for i in 8:
+		var a := TAU * i / 8.0
+		_mi(cyl(0.006, 0.016, 0.2, 5), red, root, Vector3(cos(a) * 0.03, above - 0.2, sin(a) * 0.03),
+			Vector3(-rad_to_deg(sin(a)) * 0.2, 0, rad_to_deg(cos(a)) * 0.2))
+	for t in [0.25, 0.5, 0.75]:
+		_mi(cyl(0.025, 0.025, 0.025, 8), gold, root, Vector3(0, above - (above + below) * t, 0))
+	_mi(cyl(0.03, 0.026, 0.05, 8), gold, root, Vector3(0, -below + 0.02, 0))
+	_mi(cyl(0.0, 0.026, 0.16, 6), gold, root, Vector3(0, -below - 0.08, 0), Vector3(180, 0, 0))
+
+
+## Trượng Bát Xà Mâu: mũi dài uốn hai khúc như thân rắn, sống giữa nổi, mũi thoát ra từ miệng đầu rắn
+## bằng đồng, tua đỏ xoè, cán đen có đai đồng.
+func _build_xa_mau(w: WeaponDef, root: Node3D, above: float, below: float, _blade: Material, gold: Material, red: Material) -> void:
+	var steel := Mats.color(Color(0.8, 0.82, 0.86), 0.3, 0.55)
+	var ridge_mat := Mats.color(Color(0.55, 0.57, 0.62), 0.35, 0.6)
+	var base := above + 0.07
+	var left := PackedVector2Array()
+	var right := PackedVector2Array()
+	var ridge_l := PackedVector2Array()
+	var ridge_r := PackedVector2Array()
+	var n := 24
+	for i in n + 1:
+		var t := float(i) / n
+		var y := t * w.blade_length
+		var cx := 0.06 * sin(t * TAU * 1.25) * (1.0 - t * 0.5)
+		var half := w.blade_width * 0.5 * pow(1.0 - t, 0.8) * (0.8 + 0.2 * cos(t * TAU * 2.5))
+		left.append(Vector2(cx - half, y))
+		right.append(Vector2(cx + half, y))
+		ridge_l.append(Vector2(cx - half * 0.18, y))
+		ridge_r.append(Vector2(cx + half * 0.18, y))
+	right.reverse()
+	left.append_array(right)
+	ridge_r.reverse()
+	ridge_l.append_array(ridge_r)
+	_mi(flat_mesh(left, 0.014), steel, root, Vector3(0, base, 0))
+	_mi(flat_mesh(ridge_l, 0.022), ridge_mat, root, Vector3(0, base, 0))
+	# Đầu rắn bằng đồng: đầu dẹt, hàm há ngậm chân mũi, mắt đỏ.
+	_mi(capsule(0.036, 0.13), gold, root, Vector3(0, above + 0.02, 0), Vector3.ZERO, Vector3(1.25, 1, 0.8))
+	_mi(box(Vector3(0.09, 0.04, 0.035)), gold, root, Vector3(0, above + 0.085, 0))
+	for z in [-1.0, 1.0]:
+		_mi(sphere(0.009, 0.018), red, root, Vector3(0.03 * z, above + 0.06, 0.026))
+		_mi(sphere(0.009, 0.018), red, root, Vector3(0.03 * z, above + 0.06, -0.026))
+	_mi(cyl(0.028, 0.03, 0.04, 10), gold, root, Vector3(0, above - 0.07, 0))
+	for i in 10:
+		var a := TAU * i / 10.0
+		_mi(cyl(0.006, 0.018, 0.24, 5), red, root, Vector3(cos(a) * 0.032, above - 0.2, sin(a) * 0.032),
+			Vector3(-rad_to_deg(sin(a)) * 0.22, 0, rad_to_deg(cos(a)) * 0.22))
+	for t in [0.3, 0.6]:
+		_mi(cyl(0.024, 0.024, 0.025, 8), gold, root, Vector3(0, above - (above + below) * t, 0))
+	_mi(cyl(0.026, 0.02, 0.07, 8), gold, root, Vector3(0, -below, 0))
+
+
+## Tấm phẳng dày thickness theo đường viền (mặt phẳng xy, đều về hai phía z).
+static func flat_mesh(outline: PackedVector2Array, thickness: float) -> ArrayMesh:
+	var tris := Geometry2D.triangulate_polygon(outline)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var hz := thickness * 0.5
+	for side in [1.0, -1.0]:
+		st.set_normal(Vector3(0, 0, side))
+		for i in range(0, tris.size(), 3):
+			# Godot coi mặt có đỉnh xếp theo chiều kim đồng hồ là mặt trước.
+			var order := [0, 2, 1] if side > 0.0 else [0, 1, 2]
+			for o in order:
+				var p := outline[tris[i + o]]
+				st.add_vertex(Vector3(p.x, p.y, hz * side))
+	# Viền: hướng pháp tuyến ra ngoài tuỳ chiều đường viền.
+	var ccw := Geometry2D.is_polygon_clockwise(outline) == false
+	for i in outline.size():
+		var a := outline[i]
+		var b := outline[(i + 1) % outline.size()]
+		var e := (b - a).normalized()
+		var nrm := Vector3(e.y, -e.x, 0) if ccw else Vector3(-e.y, e.x, 0)
+		st.set_normal(nrm)
+		var q := [Vector3(a.x, a.y, hz), Vector3(a.x, a.y, -hz), Vector3(b.x, b.y, -hz), Vector3(b.x, b.y, hz)]
+		for j in ([0, 2, 1, 0, 3, 2] if ccw else [0, 1, 2, 0, 2, 3]):
+			st.add_vertex(q[j])
+	st.index()
+	return st.commit()
 
 
 # ---------------------------------------------------------------- cập nhật mỗi khung
@@ -478,6 +624,8 @@ func die(blow: Vector3) -> void:
 	l.y = 0.0
 	_fall_dir = l.normalized() if l.length() > 0.01 else Vector3(0, 0, 1)
 	_death_t = 0.0
+	_dying = true
+	_death_side = 1.0 if randf() < 0.5 else -1.0
 	_drop_weapon()
 
 
@@ -494,21 +642,38 @@ func _drop_weapon() -> void:
 	_drop_spin = Vector3(randf_range(2.0, 4.0), randf_range(-2.0, 2.0), randf_range(-3.0, 3.0))
 
 
-## Ngã: 0..0,25 khuỵu gối, 0,25..1 đổ người (nhanh dần như rơi), sau đó nảy nhẹ khi chạm đất.
+## Ngã như Bannerlord: giật người theo đường chém, khuỵu gối gục đầu, đổ theo hướng đòn (nhanh dần như rơi)
+## vừa đổ vừa xoay người, tay văng ngược lên; chạm đất thì nảy nhẹ, tay dang, đầu ngoẹo sang bên.
 func _update_death(delta: float) -> void:
-	_death_t += delta / maxf(0.01, poses.death_fall_time * 1.5)
-	var buckle := smoothstep(0.0, 0.25, _death_t)
-	var f := clampf((_death_t - 0.2) / 0.8, 0.0, 1.0)
-	var angle := deg_to_rad(86.0) * f * f
-	if _death_t > 1.0:
-		angle -= deg_to_rad(6.0) * sin(PI * minf(1.0, (_death_t - 1.0) / 0.25)) * maxf(0.0, 1.0 - (_death_t - 1.0))
+	_death_t += delta * (0.6 / maxf(0.01, poses.death_fall_time))
+	var t := _death_t
 	var axis := Vector3.UP.cross(_fall_dir).normalized()
-	_body.transform = Transform3D(Basis(axis, angle) * Basis.from_scale(_body_scale), Vector3(0, -0.12 * buckle * (1.0 - f), 0))
-	_pelvis.position.y -= 0.32 * buckle * (1.0 - f * 0.6)
-	_chest.rotation = Vector3(0.4 * buckle, 0.0, 0.0)
-	_head.rotation = Vector3(0.5 * buckle, 0.0, 0.0)
-	_hand.position = _hand.position.lerp(Vector3(0.28, 0.7, -0.15), 1.0 - exp(-6.0 * delta))
-	_left_hand_target = _left_hand_target.lerp(Vector3(-0.28, 0.7, -0.1), 1.0 - exp(-6.0 * delta))
+	var jerk := smoothstep(0.0, 0.07, t) * (1.0 - smoothstep(0.15, 0.45, t))
+	var buckle := smoothstep(0.05, 0.4, t)
+	var f := clampf((t - 0.28) / (DEATH_LAND - 0.28), 0.0, 1.0)
+	var angle := deg_to_rad(88.0) * f * f
+	var settle := 0.0
+	if t > DEATH_LAND:
+		var b := (t - DEATH_LAND) / 0.4
+		angle -= deg_to_rad(8.0) * sin(PI * minf(b, 1.0)) * maxf(0.0, 1.0 - b * 0.5)
+		settle = smoothstep(0.0, 1.0, b)
+	var twist := deg_to_rad(28.0) * _death_side * smoothstep(0.1, DEATH_LAND, t)
+	var slide := _fall_dir * (0.08 * jerk + 0.3 * smoothstep(0.3, DEATH_LAND + 0.15, t))
+	_body.transform = Transform3D(Basis(axis, angle) * Basis(Vector3.UP, twist) * Basis.from_scale(_body_scale),
+		slide + Vector3(0, -0.1 * buckle * (1.0 - f), 0))
+	_pelvis.position.y -= 0.42 * buckle * (1.0 - f * 0.95)
+	_chest.basis = Basis(axis, 0.45 * jerk + 0.15 * f) * Basis(Vector3.RIGHT, 0.4 * buckle * (1.0 - f))
+	_head.basis = Basis(axis, 0.6 * jerk + 0.25 * f) * Basis(Vector3.UP, 0.7 * settle * _death_side) \
+		* Basis(Vector3.RIGHT, 0.35 * buckle * (1.0 - f))
+	var fling := smoothstep(0.03, 0.4, t)
+	var trail := -_fall_dir * 0.3
+	# Nằm rồi thì tay rũ xuống đất (phía ngã là phía mặt đất).
+	var ground := _fall_dir * 0.2
+	var r := (Vector3(0.42, 1.2, -0.05) + trail).lerp(Vector3(0.6, 1.2, 0.0) + ground, settle)
+	var l := (Vector3(-0.42, 1.25, -0.02) + trail).lerp(Vector3(-0.58, 1.3, 0.0) + ground, settle)
+	var k := 1.0 - exp(-9.0 * delta)
+	_hand.position = _hand.position.lerp(Vector3(0.28, 0.9, -0.2).lerp(r, fling), k)
+	_left_hand_target = _left_hand_target.lerp(Vector3(-0.28, 0.9, -0.2).lerp(l, fling), k)
 	if _dropped and not _drop_landed:
 		_drop_vel.y -= 9.8 * delta
 		_dropped.global_position += _drop_vel * delta
@@ -754,7 +919,7 @@ func _update_limbs() -> void:
 	# Tay trái: cầm khiên, hoặc nắm cán phía dưới tay phải.
 	var l_sh := chest * Vector3(-SHOULDER.x, SHOULDER.y, SHOULDER.z)
 	var l_target := _left_hand_target
-	if _shield == null:
+	if _shield == null and not _dying:
 		# Tay trái nắm chỗ cán gần vai trái nhất (không sát tay phải), trượt dần dọc cán khi đổi thế.
 		var y := _hand.basis.y.normalized()
 		var t := clampf((l_sh - _hand.position).dot(y), -poses.two_hand_grip, poses.two_hand_grip)
