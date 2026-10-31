@@ -146,15 +146,15 @@ func _on_event(e: Dictionary) -> void:
 	match e["type"]:
 		&"blocked":
 			vfx.clash(_clash_point(e))
-			(views[e["target"]] as FighterView).jolt(1.0)
+			(views[e["target"]] as FighterView).jolt(1.0, _attack_blow(e))
 			_shake_if_player(e, ConfigDB.game.camera_shake_block)
 		&"parried":
 			vfx.clash(_clash_point(e), 1.8, Color(0.75, 0.9, 1.0))
-			(views[e["target"]] as FighterView).jolt(0.6)
+			(views[e["target"]] as FighterView).jolt(0.6, _attack_blow(e))
 			_shake_if_player(e, ConfigDB.game.camera_shake_block * 1.5)
 		&"guard_broken":
 			vfx.clash(_clash_point(e), 1.4, Color(1.0, 0.55, 0.3))
-			(views[e["target"]] as FighterView).jolt(1.6)
+			(views[e["target"]] as FighterView).jolt(1.6, _attack_blow(e))
 			_shake_if_player(e, ConfigDB.game.camera_shake_hit)
 		&"hit":
 			var blow := _blow_dir(e["id"], e["target"], int(e["dir"]))
@@ -179,6 +179,11 @@ func _on_event(e: Dictionary) -> void:
 
 ## Hướng lưỡi vũ khí đi khi trúng (thế giới): từ người chém về người bị chém; chém ngang thì
 ## lệch thêm sang bên mà lưỡi quét tới (chém từ phải quét sang trái của người chém).
+## Hướng lưỡi vũ khí của người đánh trong sự kiện e (đỡ, gạt, phá thế đỡ).
+func _attack_blow(e: Dictionary) -> Vector3:
+	return _blow_dir(e["id"], e["target"], int(e["dir"]))
+
+
 func _blow_dir(attacker_id: int, target_id: int, dir: int) -> Vector3:
 	var a := sim.state.get_fighter(attacker_id)
 	var t := sim.state.get_fighter(target_id)
