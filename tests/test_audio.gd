@@ -61,3 +61,7 @@ func test_each_contact_sounds_different() -> void:
 	check(_brightness(blade) > _brightness(haft) * 2.0, "lưỡi chạm lưỡi chói hơn hẳn tiếng gỗ")
 	check(_brightness(haft) > _brightness(shield) * 1.5, "cán gỗ đanh hơn tiếng khiên trầm")
 	check(SfxSynth.haft_hit(31).data != SfxSynth.haft_hit(32, 0.88).data, "các bản khác nhau để không lặp đều")
+
+
+func test_heavy_weapon_swings_longer() -> void:
+	check(SfxSynth.whoosh(13, 0.42, 0.55).get_length() > SfxSynth.whoosh().get_length(), "đao, giáo nặng vung lâu hơn kiếm")

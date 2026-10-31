@@ -62,6 +62,7 @@ func _ready() -> void:
 	var audio := AudioDirector.new()
 	add_child(audio)
 	audio.setup(ConfigDB.audio)
+	audio.bind_match(sim, player_id)
 
 	var qm := QualityManager.new()
 	add_child(qm)

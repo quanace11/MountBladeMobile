@@ -79,53 +79,65 @@ def reverb(d, rate, wet, tail):
             line[p] = x + 0.7*y; p = (p+1) % D; out[i] = y
     for i in range(len(d)): d[i] += wet*out[i]
 
-# ---------- các tiếng ----------
+# ---------- các tiếng (chất Mount & Blade 2: ngắn, chắc, nặng, khô; ít ngân, ít vọng) ----------
+
+def whoosh(seed, dur=0.28, bright=1.0):
+    rate = 22050; rng = Rng(seed); n = int(rate*dur); d = [0.0]*n
+    lp = lp2 = 0.0
+    for i in range(n):
+        x = i/n; shape = math.sin(math.pi*x)
+        cut = (0.05 + 0.25*shape)*bright
+        lp += (rng.f(-1,1)-lp)*cut; lp2 += (lp-lp2)*cut
+        d[i] = (lp-lp2)*shape*shape
+    return d, rate
+
+def splinters(d, rate, rng, count, t0, t1, a0, a1):
+    for k in range(count):
+        noise_burst(d, rate, rng, int(rng.f(t0, t1)*rate), 0.0008, rng.f(a0, a1))
 
 def blade_clash(seed, base):
-    rate = 32000; rng = Rng(seed); d = buf(rate, 1.1)
+    rate = 32000; rng = Rng(seed); d = buf(rate, 0.55)
     j = lambda: rng.f(0.97, 1.03)
     ratios = [1.0, 1.58, 2.76, 3.47, 5.40, 6.93, 8.93]
-    decays = [0.85, 0.65, 0.5, 0.38, 0.24, 0.17, 0.11]
+    decays = [0.34, 0.26, 0.2, 0.15, 0.1, 0.07, 0.05]
     amps   = [0.5, 0.3, 0.45, 0.3, 0.3, 0.2, 0.18]
     fs = [base*r*j() for r in ratios]
     add_modes(d, rate, 0, fs, decays, amps)
     add_modes(d, rate, 0, [f*1.0035 for f in fs], decays, [a*0.7 for a in amps])
-    noise_burst(d, rate, rng, 0, 0.0025, 2.2)
-    band_noise(d, rate, rng, 0, 0.06, 3800, 3000, 1800, 2.0, 0.0005, 0.012)
-    # xiiing: hai lưỡi miết vào nhau
-    band_noise(d, rate, rng, int(0.012*rate), 0.26, 6500, 2600, 700, 1.8, 0.01, 0.09, grain=0.02)
-    sweep_sine(d, rate, 0, 260, 170, 0.02, 0.03, 0.5)
-    reverb(d, rate, 0.22, 0.5)
+    noise_burst(d, rate, rng, 0, 0.003, 2.2)
+    band_noise(d, rate, rng, 0, 0.06, 3200, 2400, 2000, 2.6, 0.0005, 0.015)
+    band_noise(d, rate, rng, int(0.01*rate), 0.1, 6000, 3000, 800, 0.8, 0.005, 0.04, grain=0.03)
+    add_modes(d, rate, 0, [420*j(), 900*j()], [0.05, 0.03], [0.8, 0.5])
+    sweep_sine(d, rate, 0, 200, 120, 0.02, 0.04, 0.9)
+    reverb(d, rate, 0.08, 0.25)
     return d, rate
 
 def haft_hit(seed, base=1.0):
-    rate = 22050; rng = Rng(seed); d = buf(rate, 0.35)
+    rate = 22050; rng = Rng(seed); d = buf(rate, 0.3)
     j = lambda: rng.f(0.94, 1.06)
     add_modes(d, rate, 0, [f*base*j() for f in (380, 820, 1350, 2100, 3050)],
               [0.07, 0.045, 0.03, 0.02, 0.012], [1.0, 0.7, 0.55, 0.4, 0.3])
-    noise_burst(d, rate, rng, 0, 0.0015, 2.0)
-    noise_burst(d, rate, rng, 0, 0.02, 1.2, hp=False, lp_a=0.25)
-    # tiếng "cạch" nhỏ của lưỡi đao bên kia
-    add_modes(d, rate, 0, [2600*j(), 4300*j(), 6900*j()], [0.09, 0.06, 0.04], [0.24, 0.16, 0.1])
-    sweep_sine(d, rate, 0, 150, 100, 0.02, 0.05, 0.8)
-    for k in range(4):  # thớ gỗ dập
-        noise_burst(d, rate, rng, int(rng.f(0.002, 0.022)*rate), 0.0008, rng.f(0.6, 1.2))
-    reverb(d, rate, 0.14, 0.35)
+    noise_burst(d, rate, rng, 0, 0.002, 2.4)
+    noise_burst(d, rate, rng, 0, 0.025, 1.6, hp=False, lp_a=0.25)
+    add_modes(d, rate, 0, [1900*j(), 2600*j(), 4300*j(), 6900*j()], [0.08, 0.07, 0.05, 0.035], [0.3, 0.35, 0.25, 0.15])
+    sweep_sine(d, rate, 0, 160, 95, 0.02, 0.06, 1.2)
+    splinters(d, rate, rng, 4, 0.002, 0.022, 0.6, 1.2)
+    reverb(d, rate, 0.08, 0.25)
     return d, rate
 
 def shield_hit(seed):
-    rate = 22050; rng = Rng(seed); d = buf(rate, 0.5)
+    rate = 22050; rng = Rng(seed); d = buf(rate, 0.4)
     j = lambda: rng.f(0.93, 1.07)
-    add_modes(d, rate, 0, [f*j() for f in (92, 150, 228, 310, 455, 640)],
-              [0.16, 0.11, 0.08, 0.06, 0.04, 0.03], [1.0, 0.8, 0.6, 0.45, 0.3, 0.2])
-    noise_burst(d, rate, rng, 0, 0.045, 2.2, hp=False, lp_a=0.08)
-    noise_burst(d, rate, rng, 0, 0.012, 0.8, hp=False, lp_a=0.3)
-    noise_burst(d, rate, rng, 0, 0.002, 1.2)
-    sweep_sine(d, rate, 0, 120, 70, 0.03, 0.09, 1.0)
-    for k in range(3):  # đinh tán, vành sắt lách cách
-        add_modes(d, rate, int((0.002 + k*0.035 + rng.f(0, 0.015))*rate), [rng.f(2600, 3800), rng.f(4500, 5600)],
-                  [0.03, 0.02], [0.12/(k+1), 0.06/(k+1)])
-    reverb(d, rate, 0.16, 0.4)
+    add_modes(d, rate, 0, [f*j() for f in (140, 235, 360, 520, 760, 1050)],
+              [0.09, 0.07, 0.05, 0.035, 0.025, 0.018], [1.0, 0.9, 0.75, 0.55, 0.4, 0.25])
+    noise_burst(d, rate, rng, 0, 0.03, 2.6, hp=False, lp_a=0.15)
+    noise_burst(d, rate, rng, 0, 0.01, 1.0, hp=False, lp_a=0.4)
+    noise_burst(d, rate, rng, 0, 0.002, 1.6)
+    sweep_sine(d, rate, 0, 110, 65, 0.03, 0.07, 1.2)
+    splinters(d, rate, rng, 8, 0.001, 0.03, 0.5, 1.0)
+    for k in range(2):  # vành sắt
+        add_modes(d, rate, int((0.002 + k*0.03 + rng.f(0, 0.01))*rate), [rng.f(2600, 3800)], [0.025], [0.08])
+    reverb(d, rate, 0.08, 0.3)
     return d, rate
 
 def wet_grains(d, rate, rng, count, t_max, f_lo, f_hi, amp):
@@ -141,29 +153,36 @@ def wet_grains(d, rate, rng, count, t_max, f_lo, f_hi, amp):
             y = g*rng.f(-1,1) + c1*y1 + c2*y2; y2 = y1; y1 = y
             d[i] += a*y*math.sin(math.pi*m/n)
 
+def armour(d, rate, rng, plates, gap, amp):
+    # giáp lá: các mảnh sắt nhỏ va nhau lách cách ngay lúc trúng
+    for k in range(plates):
+        at = int((0.001 + k*gap + rng.f(0, gap*0.7))*rate)
+        add_modes(d, rate, at, [rng.f(1800, 3200), rng.f(3800, 5200)], [rng.f(0.02, 0.04), 0.015],
+                  [amp/(1 + 0.3*k), amp*0.4])
+
 def flesh_slash(seed, heavy=False):
-    rate = 22050; rng = Rng(seed); d = buf(rate, 0.4)
-    band_noise(d, rate, rng, 0, 0.11, 4800*rng.f(0.9,1.1), 1300, 1400, 2.4, 0.004, 0.05)
-    noise_burst(d, rate, rng, 0, 0.03, 0.5)
-    sweep_sine(d, rate, int(0.008*rate), 95, 45, 0.04, 0.07, 1.2)
-    noise_burst(d, rate, rng, int(0.006*rate), 0.06, 4.0, hp=False, lp_a=0.06)
-    wet_grains(d, rate, rng, 14, 0.17, 250, 1000, 4.5)
-    for k in range(3):  # giáp lá
-        add_modes(d, rate, int((0.002 + k*0.016 + rng.f(0, 0.01))*rate), [rng.f(2400, 4200)], [rng.f(0.012, 0.02)], [0.12])
+    rate = 22050; rng = Rng(seed); d = buf(rate, 0.35)
+    band_noise(d, rate, rng, 0, 0.06, 3500*rng.f(0.9,1.1), 1500, 1500, 1.2, 0.003, 0.025)
+    band_noise(d, rate, rng, 0, 0.08, 600, 350, 500, 3.0, 0.001, 0.025)
+    sweep_sine(d, rate, int(0.004*rate), 130, 55, 0.03, 0.08, 1.7)
+    noise_burst(d, rate, rng, int(0.004*rate), 0.05, 3.5, hp=False, lp_a=0.06)
+    wet_grains(d, rate, rng, 8, 0.1, 250, 800, 3.0)
+    armour(d, rate, rng, 5, 0.012, 0.28)
     if heavy:
-        for k in range(6):  # xương gãy
-            noise_burst(d, rate, rng, int((0.012 + rng.f(0, 0.025))*rate), 0.0012, rng.f(0.8, 1.5))
-        sweep_sine(d, rate, int(0.01*rate), 70, 38, 0.05, 0.11, 1.0)
-    reverb(d, rate, 0.1, 0.3)
+        splinters(d, rate, rng, 8, 0.008, 0.035, 1.0, 1.8)
+        sweep_sine(d, rate, int(0.01*rate), 80, 40, 0.05, 0.12, 1.3)
+    reverb(d, rate, 0.06, 0.25)
     return d, rate
 
 def flesh_stab(seed):
-    rate = 22050; rng = Rng(seed); d = buf(rate, 0.42)
-    band_noise(d, rate, rng, 0, 0.05, 2800, 1800, 1200, 1.6, 0.002, 0.016)
-    sweep_sine(d, rate, int(0.004*rate), 80, 40, 0.05, 0.09, 1.4)
-    noise_burst(d, rate, rng, int(0.004*rate), 0.09, 2.6, hp=False, lp_a=0.05)
-    wet_grains(d, rate, rng, 18, 0.24, 200, 700, 6.5)
-    reverb(d, rate, 0.1, 0.3)
+    rate = 22050; rng = Rng(seed); d = buf(rate, 0.35)
+    band_noise(d, rate, rng, 0, 0.04, 2400, 1600, 1200, 1.2, 0.002, 0.012)
+    band_noise(d, rate, rng, 0, 0.08, 500, 300, 450, 2.6, 0.001, 0.03)
+    sweep_sine(d, rate, int(0.004*rate), 110, 45, 0.04, 0.09, 1.8)
+    noise_burst(d, rate, rng, int(0.004*rate), 0.07, 3.5, hp=False, lp_a=0.05)
+    wet_grains(d, rate, rng, 10, 0.15, 200, 600, 4.0)
+    armour(d, rate, rng, 2, 0.015, 0.2)
+    reverb(d, rate, 0.06, 0.25)
     return d, rate
 
 def norm(d, gain):
@@ -186,6 +205,8 @@ if __name__ == '__main__':
     import os
     out = sys.argv[1] if len(sys.argv) > 1 else "sfx_preview"; os.makedirs(out, exist_ok=True)
     items = [
+ ("0_vung_dao_nang", lambda: whoosh(3, 0.42, 0.55), 0.6),
+ ("0_vung_kiem_nhe", lambda: whoosh(4, 0.24, 1.2), 0.6),
      ("1_luoi_cham_luoi_a", lambda: blade_clash(21, 1250), 0.9),
      ("1_luoi_cham_luoi_b", lambda: blade_clash(22, 1080), 0.9),
      ("2_chem_vao_can_a", lambda: haft_hit(31), 0.95),

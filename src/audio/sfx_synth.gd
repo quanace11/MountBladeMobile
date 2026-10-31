@@ -105,10 +105,10 @@ static func body_fall(seed: int = 5) -> AudioStreamWAV:
 
 
 ## Vung vũ khí: nhiễu lọc, to dần rồi nhỏ dần, tần số quét lên rồi xuống.
-static func whoosh(seed: int = 3) -> AudioStreamWAV:
+## dur: vũ khí nặng vung lâu hơn. bright < 1: tiếng "vù" trầm của đao, giáo nặng; > 1: "vút" của kiếm nhẹ.
+static func whoosh(seed: int = 3, dur: float = 0.28, bright: float = 1.0) -> AudioStreamWAV:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	var dur := 0.28
 	var n := int(RATE * dur)
 	var data := PackedFloat32Array()
 	data.resize(n)
@@ -117,7 +117,7 @@ static func whoosh(seed: int = 3) -> AudioStreamWAV:
 	for i in n:
 		var x := float(i) / n
 		var shape := sin(PI * x)
-		var cut := 0.05 + 0.25 * shape
+		var cut := (0.05 + 0.25 * shape) * bright
 		lp += (rng.randf_range(-1, 1) - lp) * cut
 		lp2 += (lp - lp2) * cut
 		data[i] = (lp - lp2) * shape * shape
@@ -141,114 +141,131 @@ static func _to_wav(data: PackedFloat32Array, gain: float, rate: int = RATE) -> 
 
 
 # ---------------------------------------------------------------------------------------------
-# Tiếng va chạm kiểu phim: mỗi tiếng ghép từ vài lớp (cộng hưởng của vật bị chém, tiếng gõ lúc chạm,
-# tiếng miết, tiếng đục trầm) rồi phủ chút tiếng vọng. Mỗi tiếng có vài bản (seed khác) để không lặp đều.
+# Tiếng va chạm theo chất Mount & Blade 2: ngắn, chắc, nặng và khô (ít ngân, ít vọng, như ngoài trời).
+# Mỗi tiếng ghép từ vài lớp (cộng hưởng của vật bị chém, tiếng gõ lúc chạm, tiếng đục trầm, giáp lá)
+# và có vài bản (seed khác) để không lặp đều.
 # Thuật toán giống hệt bản Python dùng để nghe thử: tools/sfx_preview.py.
 
 
-## Lưỡi chém trúng lưỡi (kim loại chạm kim loại): "KEENG" ngân dài, có tiếng hai lưỡi miết "xiiing".
+## Lưỡi chạm lưỡi (đỡ hoàn hảo): "chang" kim loại chắc, ngân ngắn, lẫn tiếng cán gỗ dội.
 ## base: tần số chính (Hz), lưỡi to thì trầm hơn.
 static func blade_clash(base: float, seed: int = 21) -> AudioStreamWAV:
 	var rate := 32000
 	var rng := _rng(seed)
-	var d := _buf(rate, 1.1)
+	var d := _buf(rate, 0.55)
 	var ratios := [1.0, 1.58, 2.76, 3.47, 5.40, 6.93, 8.93]
-	var decays := [0.85, 0.65, 0.5, 0.38, 0.24, 0.17, 0.11]
+	var decays := [0.34, 0.26, 0.2, 0.15, 0.1, 0.07, 0.05]
 	var amps := [0.5, 0.3, 0.45, 0.3, 0.3, 0.2, 0.18]
 	var fs := []
 	for r in ratios:
 		fs.append(base * r * rng.randf_range(0.97, 1.03))
 	_add_modes(d, rate, 0, fs, decays, amps)
-	# Mỗi hoạ âm thêm một bản lệch 0,35% cho tiếng ngân "rung rung" như lưỡi thép thật.
+	# Mỗi hoạ âm thêm một bản lệch 0,35% cho tiếng thép "rung".
 	var fs2 := []
 	var amps2 := []
 	for k in fs.size():
 		fs2.append(fs[k] * 1.0035)
 		amps2.append(amps[k] * 0.7)
 	_add_modes(d, rate, 0, fs2, decays, amps2)
-	_noise_burst(d, rate, rng, 0, 0.0025, 2.2)
-	_band_noise(d, rate, rng, 0, 0.06, 3800.0, 3000.0, 1800.0, 2.0, 0.0005, 0.012)
-	_band_noise(d, rate, rng, int(0.012 * rate), 0.26, 6500.0, 2600.0, 700.0, 1.8, 0.01, 0.09, 0.02)
-	_sweep_sine(d, rate, 0, 260.0, 170.0, 0.02, 0.03, 0.5)
-	d = _reverb(d, rate, 0.22, 0.5)
+	_noise_burst(d, rate, rng, 0, 0.003, 2.2)
+	_band_noise(d, rate, rng, 0, 0.06, 3200.0, 2400.0, 2000.0, 2.6, 0.0005, 0.015)
+	_band_noise(d, rate, rng, int(0.01 * rate), 0.1, 6000.0, 3000.0, 800.0, 0.8, 0.005, 0.04, 0.03)
+	_add_modes(d, rate, 0, [420.0 * rng.randf_range(0.97, 1.03), 900.0 * rng.randf_range(0.97, 1.03)], [0.05, 0.03], [0.8, 0.5])
+	_sweep_sine(d, rate, 0, 200.0, 120.0, 0.02, 0.04, 0.9)
+	d = _reverb(d, rate, 0.08, 0.25)
 	return _to_wav(d, 0.9, rate)
 
 
-## Chém trúng cán gỗ: "CỘC" khô, ngắn, thớ gỗ dập, kèm tiếng "cạch" nhỏ của lưỡi chém vào.
+## Chém trúng cán: "cạch-cộc" chắc nịch, gỗ dày lẫn tiếng sắt của lưỡi và đai cán.
 ## pitch < 1: cán to, nặng hơn.
 static func haft_hit(seed: int = 31, pitch: float = 1.0) -> AudioStreamWAV:
 	var rate := 22050
 	var rng := _rng(seed)
-	var d := _buf(rate, 0.35)
+	var d := _buf(rate, 0.3)
 	var wood := []
 	for f in [380.0, 820.0, 1350.0, 2100.0, 3050.0]:
 		wood.append(f * pitch * rng.randf_range(0.94, 1.06))
 	_add_modes(d, rate, 0, wood, [0.07, 0.045, 0.03, 0.02, 0.012], [1.0, 0.7, 0.55, 0.4, 0.3])
-	_noise_burst(d, rate, rng, 0, 0.0015, 2.0)
-	_noise_burst(d, rate, rng, 0, 0.02, 1.2, false, 0.25)
-	var tick := [2600.0 * rng.randf_range(0.94, 1.06), 4300.0 * rng.randf_range(0.94, 1.06), 6900.0 * rng.randf_range(0.94, 1.06)]
-	_add_modes(d, rate, 0, tick, [0.09, 0.06, 0.04], [0.24, 0.16, 0.1])
-	_sweep_sine(d, rate, 0, 150.0, 100.0, 0.02, 0.05, 0.8)
-	for k in 4:
-		_noise_burst(d, rate, rng, int(rng.randf_range(0.002, 0.022) * rate), 0.0008, rng.randf_range(0.6, 1.2))
-	d = _reverb(d, rate, 0.14, 0.35)
+	_noise_burst(d, rate, rng, 0, 0.002, 2.4)
+	_noise_burst(d, rate, rng, 0, 0.025, 1.6, false, 0.25)
+	var metal := []
+	for f in [1900.0, 2600.0, 4300.0, 6900.0]:
+		metal.append(f * rng.randf_range(0.94, 1.06))
+	_add_modes(d, rate, 0, metal, [0.08, 0.07, 0.05, 0.035], [0.3, 0.35, 0.25, 0.15])
+	_sweep_sine(d, rate, 0, 160.0, 95.0, 0.02, 0.06, 1.2)
+	_splinters(d, rate, rng, 4, 0.002, 0.022, 0.6, 1.2)
+	d = _reverb(d, rate, 0.08, 0.25)
 	return _to_wav(d, 0.95, rate)
 
 
-## Chém trúng khiên gỗ bọc da: "BỘP" trầm, dày như trống, vành sắt và đinh tán lách cách.
+## Chém trúng khiên: "THỊCH" gỗ dày nặng nề, thớ gỗ nứt lắc rắc, vành sắt kêu nhẹ.
 static func shield_hit(seed: int = 41) -> AudioStreamWAV:
 	var rate := 22050
 	var rng := _rng(seed)
-	var d := _buf(rate, 0.5)
-	var drum := []
-	for f in [92.0, 150.0, 228.0, 310.0, 455.0, 640.0]:
-		drum.append(f * rng.randf_range(0.93, 1.07))
-	_add_modes(d, rate, 0, drum, [0.16, 0.11, 0.08, 0.06, 0.04, 0.03], [1.0, 0.8, 0.6, 0.45, 0.3, 0.2])
-	_noise_burst(d, rate, rng, 0, 0.045, 2.2, false, 0.08)
-	_noise_burst(d, rate, rng, 0, 0.012, 0.8, false, 0.3)
-	_noise_burst(d, rate, rng, 0, 0.002, 1.2)
-	_sweep_sine(d, rate, 0, 120.0, 70.0, 0.03, 0.09, 1.0)
-	for k in 3:
-		var at := int((0.002 + k * 0.035 + rng.randf_range(0.0, 0.015)) * rate)
-		_add_modes(d, rate, at, [rng.randf_range(2600.0, 3800.0), rng.randf_range(4500.0, 5600.0)],
-				[0.03, 0.02], [0.12 / (k + 1), 0.06 / (k + 1)])
-	d = _reverb(d, rate, 0.16, 0.4)
+	var d := _buf(rate, 0.4)
+	var board := []
+	for f in [140.0, 235.0, 360.0, 520.0, 760.0, 1050.0]:
+		board.append(f * rng.randf_range(0.93, 1.07))
+	_add_modes(d, rate, 0, board, [0.09, 0.07, 0.05, 0.035, 0.025, 0.018], [1.0, 0.9, 0.75, 0.55, 0.4, 0.25])
+	_noise_burst(d, rate, rng, 0, 0.03, 2.6, false, 0.15)
+	_noise_burst(d, rate, rng, 0, 0.01, 1.0, false, 0.4)
+	_noise_burst(d, rate, rng, 0, 0.002, 1.6)
+	_sweep_sine(d, rate, 0, 110.0, 65.0, 0.03, 0.07, 1.2)
+	_splinters(d, rate, rng, 8, 0.001, 0.03, 0.5, 1.0)
+	for k in 2:
+		var at := int((0.002 + k * 0.03 + rng.randf_range(0.0, 0.01)) * rate)
+		_add_modes(d, rate, at, [rng.randf_range(2600.0, 3800.0)], [0.025], [0.08])
+	d = _reverb(d, rate, 0.08, 0.3)
 	return _to_wav(d, 0.95, rate)
 
 
-## Chém trúng người: "XOẸT-PHẬP". Lưỡi xé qua áo và thịt (nhiễu quét từ cao xuống), cú nện trầm,
-## tiếng ướt, giáp lá lách cách. heavy: đòn chí mạng, thêm tiếng xương gãy và cú nện nặng hơn.
+## Chém trúng người: "BỤP" nặng và đục (cú nện vào thân qua lớp áo), chút tiếng xé, tiếng ướt,
+## giáp lá lách cách. heavy: đòn chí mạng, thêm tiếng xương gãy và cú nện nặng hơn.
 static func flesh_slash(seed: int = 51, heavy: bool = false) -> AudioStreamWAV:
 	var rate := 22050
 	var rng := _rng(seed)
-	var d := _buf(rate, 0.4)
-	_band_noise(d, rate, rng, 0, 0.11, 4800.0 * rng.randf_range(0.9, 1.1), 1300.0, 1400.0, 2.4, 0.004, 0.05)
-	_noise_burst(d, rate, rng, 0, 0.03, 0.5)
-	_sweep_sine(d, rate, int(0.008 * rate), 95.0, 45.0, 0.04, 0.07, 1.2)
-	_noise_burst(d, rate, rng, int(0.006 * rate), 0.06, 4.0, false, 0.06)
-	_wet_grains(d, rate, rng, 14, 0.17, 250.0, 1000.0, 4.5)
-	for k in 3:
-		var at := int((0.002 + k * 0.016 + rng.randf_range(0.0, 0.01)) * rate)
-		_add_modes(d, rate, at, [rng.randf_range(2400.0, 4200.0)], [rng.randf_range(0.012, 0.02)], [0.12])
+	var d := _buf(rate, 0.35)
+	_band_noise(d, rate, rng, 0, 0.06, 3500.0 * rng.randf_range(0.9, 1.1), 1500.0, 1500.0, 1.2, 0.003, 0.025)
+	_band_noise(d, rate, rng, 0, 0.08, 600.0, 350.0, 500.0, 3.0, 0.001, 0.025)
+	_sweep_sine(d, rate, int(0.004 * rate), 130.0, 55.0, 0.03, 0.08, 1.7)
+	_noise_burst(d, rate, rng, int(0.004 * rate), 0.05, 3.5, false, 0.06)
+	_wet_grains(d, rate, rng, 8, 0.1, 250.0, 800.0, 3.0)
+	_armour(d, rate, rng, 5, 0.012, 0.28)
 	if heavy:
-		for k in 6:
-			_noise_burst(d, rate, rng, int((0.012 + rng.randf_range(0.0, 0.025)) * rate), 0.0012, rng.randf_range(0.8, 1.5))
-		_sweep_sine(d, rate, int(0.01 * rate), 70.0, 38.0, 0.05, 0.11, 1.0)
-	d = _reverb(d, rate, 0.1, 0.3)
+		_splinters(d, rate, rng, 8, 0.008, 0.035, 1.0, 1.8)
+		_sweep_sine(d, rate, int(0.01 * rate), 80.0, 40.0, 0.05, 0.12, 1.3)
+	d = _reverb(d, rate, 0.06, 0.25)
 	return _to_wav(d, 0.95, rate)
 
 
-## Đâm trúng người: "PHẬP" sâu và ướt, ít tiếng xé hơn chém.
+## Đâm trúng người: "PHỤP" sâu, đục và ướt, ít tiếng xé hơn chém.
 static func flesh_stab(seed: int = 61) -> AudioStreamWAV:
 	var rate := 22050
 	var rng := _rng(seed)
-	var d := _buf(rate, 0.42)
-	_band_noise(d, rate, rng, 0, 0.05, 2800.0, 1800.0, 1200.0, 1.6, 0.002, 0.016)
-	_sweep_sine(d, rate, int(0.004 * rate), 80.0, 40.0, 0.05, 0.09, 1.4)
-	_noise_burst(d, rate, rng, int(0.004 * rate), 0.09, 2.6, false, 0.05)
-	_wet_grains(d, rate, rng, 18, 0.24, 200.0, 700.0, 6.5)
-	d = _reverb(d, rate, 0.1, 0.3)
+	var d := _buf(rate, 0.35)
+	_band_noise(d, rate, rng, 0, 0.04, 2400.0, 1600.0, 1200.0, 1.2, 0.002, 0.012)
+	_band_noise(d, rate, rng, 0, 0.08, 500.0, 300.0, 450.0, 2.6, 0.001, 0.03)
+	_sweep_sine(d, rate, int(0.004 * rate), 110.0, 45.0, 0.04, 0.09, 1.8)
+	_noise_burst(d, rate, rng, int(0.004 * rate), 0.07, 3.5, false, 0.05)
+	_wet_grains(d, rate, rng, 10, 0.15, 200.0, 600.0, 4.0)
+	_armour(d, rate, rng, 2, 0.015, 0.2)
+	d = _reverb(d, rate, 0.06, 0.25)
 	return _to_wav(d, 0.95, rate)
+
+
+## Tiếng gỗ dập / xương gãy: vài tiếng "tách" rất ngắn rải trong khoảng t0..t1 giây.
+static func _splinters(d: PackedFloat32Array, rate: int, rng: RandomNumberGenerator, count: int,
+		t0: float, t1: float, a0: float, a1: float) -> void:
+	for k in count:
+		_noise_burst(d, rate, rng, int(rng.randf_range(t0, t1) * rate), 0.0008, rng.randf_range(a0, a1))
+
+
+## Giáp lá: các mảnh sắt nhỏ va nhau lách cách ngay lúc trúng.
+static func _armour(d: PackedFloat32Array, rate: int, rng: RandomNumberGenerator, plates: int, gap: float, amp: float) -> void:
+	for k in plates:
+		var at := int((0.001 + k * gap + rng.randf_range(0.0, gap * 0.7)) * rate)
+		_add_modes(d, rate, at, [rng.randf_range(1800.0, 3200.0), rng.randf_range(3800.0, 5200.0)],
+				[rng.randf_range(0.02, 0.04), 0.015], [amp / (1.0 + 0.3 * k), amp * 0.4])
 
 
 # ----- các khối dựng tiếng -----
