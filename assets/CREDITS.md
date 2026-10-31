@@ -14,3 +14,9 @@ Tất cả texture và bầu trời lấy từ [Poly Haven](https://polyhaven.co
 | textures/medieval_wood_* | medieval_wood |
 | textures/brown_leather_* | brown_leather |
 | textures/rock_wall_08_* | rock_wall_08 |
+
+## Âm thanh
+
+Mọi tiếng động (vung vũ khí, va chạm lưỡi/cán/khiên, chém, đâm, tiếng rên) đều tự tạo bằng code
+trong `src/audio/sfx_synth.gd`, không dùng file của ai nên không vướng giấy phép.
+Nghe thử: `python3 tools/sfx_preview.py <thư mục ra>` (xuất file .wav).

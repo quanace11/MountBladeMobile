@@ -31,6 +31,7 @@ func test_correct_block_takes_no_damage() -> void:
 	var sim: MatchSim = r[0]
 	var b := sim.state.get_fighter(r[1][1])
 	check(not (r[2] as Dictionary).is_empty(), "phải có sự kiện blocked")
+	check_eq((r[2] as Dictionary).get("contact"), &"haft", "đỡ bằng đao: chém trúng cán")
 	check_eq(b.hp, b.def.max_hp, "B không mất máu")
 	check(b.stamina == b.def.max_stamina, "kiểu M&B2: đỡ không mất thể lực")
 	check_eq(sim.state.get_fighter(r[1][0]).state, FighterState.State.STAGGER, "A bị khựng")
@@ -46,6 +47,8 @@ func test_wrong_block_takes_damage() -> void:
 	var e := run_until(sim, fn, &"hit")
 	var b := sim.state.get_fighter(ids[1])
 	check(not e.is_empty(), "đỡ sai hướng phải trúng")
+	check_eq(e.get("contact"), &"flesh", "trúng người")
+	check_eq(e.get("lethal"), false, "một đòn chưa chết")
 	check(b.hp < b.def.max_hp, "B mất máu")
 	check(not b.recoil, "trúng đòn là khựng thường")
 
@@ -59,6 +62,7 @@ func test_parry_when_block_is_raised_late() -> void:
 		return {ids[0]: cmd(Dir.UP, t == 1), ids[1]: cmd(Dir.NONE, false, Dir.UP if late else Dir.NONE)}
 	var e := run_until(sim, fn, &"parried")
 	check(not e.is_empty(), "giơ đỡ sát lúc trúng phải là đỡ hoàn hảo")
+	check_eq(e.get("contact"), &"blade", "đỡ hoàn hảo: hai lưỡi đập vào nhau")
 
 
 func test_out_of_range_misses() -> void:
@@ -119,6 +123,7 @@ func test_no_stamina_attacks_never_refused() -> void:
 func test_shield_blocks_any_direction() -> void:
 	var r := _attack_vs_block(Dir.RIGHT, Dir.UP, "kiem_tuong")
 	check(not (r[2] as Dictionary).is_empty(), "khiên đỡ được mọi hướng phía trước")
+	check_eq((r[2] as Dictionary).get("contact"), &"shield", "chém trúng khiên")
 
 
 func test_hit_interrupts_windup() -> void:
@@ -139,3 +144,14 @@ func test_snapshot_roundtrip() -> void:
 	var d := sim.state.to_dict()
 	var copy := MatchState.from_dict(d)
 	check_eq(JSON.stringify(copy.to_dict()), JSON.stringify(d), "chụp rồi khôi phục phải giống hệt")
+
+
+func test_killing_blow_is_marked_lethal() -> void:
+	var sim := make_sim()
+	var ids := face_off(sim, "dao_tuong", "dao_tuong", 1.5)
+	sim.state.get_fighter(ids[1]).hp = 1.0
+	var fn := func(t: int) -> Dictionary:
+		return {ids[0]: cmd(Dir.THRUST, t == 1)}
+	var e := run_until(sim, fn, &"hit")
+	check_eq(e.get("lethal"), true, "đòn giết chết có cờ lethal (tiếng xương gãy)")
+	check_eq(e.get("dir"), Dir.THRUST, "đâm thì phát tiếng đâm")
