@@ -48,6 +48,15 @@ var _left_hand_target := Vector3.ZERO
 
 var _flash := 0.0
 var _jolt := 0.0
+## Cán bị chém trúng khi đỡ: lò xo có giảm chấn cho độ lệch vị trí tay (mét) và độ nghiêng cán
+## (vectơ quay, radian). Bị hất theo hướng đòn rồi rung nảy về thế đỡ.
+var _kick_pos := Vector3.ZERO
+var _kick_pos_v := Vector3.ZERO
+var _kick_rot := Vector3.ZERO
+var _kick_rot_v := Vector3.ZERO
+var _kick_applied := Vector3.ZERO
+## 0 = tay trái nắm cán, 1 = tay trái buông (cán ở quá xa, ví dụ dựng cán đỡ hẳn bên phải).
+var _l_free := 0.0
 ## Hướng cán (từ tay về phía lưỡi) và hướng lưỡi sắc, theo thân. Nội suy theo hướng chứ không theo góc
 ## Euler để vũ khí đi đúng đường vung.
 var _shaft := Vector3.UP
@@ -686,9 +695,32 @@ func _update_death(delta: float) -> void:
 			_dropped.global_transform = Transform3D(Basis(Vector3.UP, _dropped.global_rotation.y) * Basis(Vector3.RIGHT, PI * 0.5), Vector3(p.x, 0.06, p.z))
 
 
-## Đỡ được đòn: tay cầm vũ khí bị đẩy lùi một chút rồi giữ lại thế đỡ, không chớp như bị trúng.
-func jolt(amount: float) -> void:
+## Đỡ được đòn: cán bị hất theo hướng lưỡi địch (blow, toạ độ thế giới) rồi rung nảy về thế đỡ,
+## không chớp như bị trúng.
+func jolt(amount: float, blow := Vector3.ZERO) -> void:
 	_jolt = maxf(_jolt, amount)
+	var b := global_transform.basis.inverse() * blow
+	if b.length() < 0.01:
+		b = Vector3(0, 0, 1)
+	b = b.normalized()
+	# Tay bị đẩy theo đòn và lùi về sau; đầu cán ngả theo đòn (quay quanh chỗ tay nắm).
+	_kick_pos_v += (b * 1.1 + Vector3(0, -0.2, 0.9)) * amount
+	_kick_rot_v += _hand.basis.y.normalized().cross(b) * 9.0 * amount
+
+
+## Lò xo của cú hất cán: dao động tắt dần quanh thế đỡ.
+func _update_kick(delta: float) -> void:
+	const K := 220.0
+	const DAMP := 9.0
+	var steps := int(ceil(delta / (1.0 / 120.0)))
+	var h := delta / maxf(1, steps)
+	for i in steps:
+		_kick_pos_v += (-K * _kick_pos - DAMP * _kick_pos_v) * h
+		_kick_pos += _kick_pos_v * h
+		_kick_rot_v += (-K * _kick_rot - DAMP * _kick_rot_v) * h
+		_kick_rot += _kick_rot_v * h
+	_kick_pos = _kick_pos.limit_length(0.25)
+	_kick_rot = _kick_rot.limit_length(0.8)
 
 
 func _update_hand_pose(cur: FighterState, delta: float) -> void:
@@ -713,8 +745,7 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 			else:
 				pose = "stagger"
 	var target: Array = poses.get_pose(pose)
-	if cur.state == S.BLOCK and _jolt > 0.0:
-		target = [target[0] + Vector3(0.0, -0.05, 0.14) * _jolt, target[1]]
+	_hand.position -= _kick_applied
 	var tb := Basis.from_euler(target[1] * (PI / 180.0))
 	if cur.state == S.RELEASE:
 		_update_swing(cur, target[0], tb, delta)
@@ -725,6 +756,11 @@ func _update_hand_pose(cur: FighterState, delta: float) -> void:
 		_edge = _turn_toward(_edge, tb.x, k)
 	_swing_state = cur.state
 	_apply_hand_basis()
+	_update_kick(delta)
+	_kick_applied = _kick_pos
+	_hand.position += _kick_pos
+	if _kick_rot.length() > 0.0001:
+		_hand.basis = Basis(_kick_rot.normalized(), _kick_rot.length()) * _hand.basis
 
 	var shield_target := poses.shield_block_pos if cur.state == S.BLOCK else poses.shield_idle_pos
 	_left_hand_target = _left_hand_target.lerp(shield_target, 1.0 - exp(-poses.blend_speed * 1.6 * delta))
@@ -929,6 +965,10 @@ func _update_limbs() -> void:
 		if absf(_grip_t) < poses.two_hand_grip_min * 0.5:
 			_grip_t = t
 		l_target = _hand.position + y * _grip_t
+		# Cán ở quá xa tay trái (dựng cán đỡ hẳn bên phải): buông tay trái, thả lỏng cạnh hông.
+		var free := 1.0 if l_target.distance_to(l_sh) > (UPPER_ARM + FOREARM) * 1.03 else 0.0
+		_l_free = lerpf(_l_free, free, 0.2)
+		l_target = l_target.lerp(l_sh + Vector3(-0.06, -0.48, -0.14), _l_free)
 	var l_hand := _arm(-1, l_sh, l_target, Vector3(-0.4, -0.6, 0.5))
 	if _shield:
 		_shield.position = l_hand + Vector3(0.02, 0.0, -0.06)
