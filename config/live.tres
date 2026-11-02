@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LiveConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/live_config.gd" id="1_l"]
+
+[resource]
+script = ExtResource("1_l")
+bridge_url = "ws://127.0.0.1:21213"
+max_on_field = 3
+instant_coins = 10
+hard_cap_on_field = 6
+tier_min_coins = PackedInt32Array(0, 10, 100)
+likes_per_heal = 10
+heal_per_step = 3.0
+max_heal_per_second = 4.0
+round_restart_seconds = 8.0

@@ -23,6 +23,11 @@ var tower_floor: int = 1
 ## Tầng cao nhất đã qua (0 = chưa qua tầng nào). Được chọn mọi tầng tới tower_best + 1.
 var tower_best: int = 0
 
+## Chế độ TikTok LIVE: người xem chọn phe, tặng quà gọi lính, thả tim hồi máu (xem src/live/).
+var live_mode: bool = false
+## Địa chỉ cầu nối TikTok LIVE (để trống = dùng mặc định trong config/live.tres).
+var live_bridge_url: String = ""
+
 
 func _ready() -> void:
 	custom_controls.block_scheme = ConfigDB.input.block_scheme
@@ -84,12 +89,23 @@ func start_match() -> void:
 ## Vào trận thường (chọn ở dòng "Trận" trong menu).
 func start_normal_match() -> void:
 	tower_mode = false
+	live_mode = false
+	start_match()
+
+
+## Vào chế độ TikTok LIVE và nối tới cầu nối.
+func start_live() -> void:
+	tower_mode = false
+	live_mode = true
+	Live.url = live_bridge_url if live_bridge_url != "" else ConfigDB.live.bridge_url
+	Live.start()
 	start_match()
 
 
 ## Vào một tầng tháp (chỉ được chọn tầng đã mở).
 func start_tower(floor_no: int) -> void:
 	tower_mode = true
+	live_mode = false
 	tower_floor = clampi(floor_no, 1, mini(tower_best + 1, TOWER_FLOORS))
 	start_match()
 
@@ -102,6 +118,9 @@ func tower_cleared() -> void:
 
 
 func back_to_menu() -> void:
+	if live_mode:
+		live_mode = false
+		Live.stop()
 	get_tree().change_scene_to_file(MENU_SCENE)
 
 
@@ -115,6 +134,7 @@ func save_settings() -> void:
 	cfg.set_value("game", "fps30", fps_cap_30)
 	cfg.set_value("game", "control_mode", control_mode)
 	cfg.set_value("game", "tower_best", tower_best)
+	cfg.set_value("game", "live_bridge_url", live_bridge_url)
 	custom_controls.save(cfg, "custom_controls")
 	cfg.save(SETTINGS_PATH)
 
@@ -131,4 +151,5 @@ func _load_settings() -> void:
 	fps_cap_30 = cfg.get_value("game", "fps30", fps_cap_30)
 	control_mode = cfg.get_value("game", "control_mode", control_mode)
 	tower_best = clampi(cfg.get_value("game", "tower_best", tower_best), 0, TOWER_FLOORS)
+	live_bridge_url = str(cfg.get_value("game", "live_bridge_url", live_bridge_url))
 	custom_controls.load_from(cfg, "custom_controls")

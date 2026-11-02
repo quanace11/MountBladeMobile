@@ -15,7 +15,14 @@ var touch: TouchController
 var player_src: PlayerCommandSource
 var vfx: VfxPool
 var hud: Hud
+## Tên hiện trên đầu từng tướng (chế độ LIVE: tên người xem). id -> String.
+var labels: Dictionary = {}
+## Chế độ LIVE: luật hai phe, người xem gọi lính (null ở trận thường).
+var live: LiveDirector
 
+## Mỗi phe một bộ phân lượt tấn công: chỉ vài bot cùng phe được ra đòn cùng lúc.
+var _tokens: Dictionary = {}
+var _seed_base: int = 0
 var _acc := 0.0
 var _prev_pos: Dictionary = {}
 var _prev_yaw: Dictionary = {}
@@ -29,8 +36,11 @@ func _ready() -> void:
 	var md := Game.current_match()
 	var half := cfg.spawn_distance * 0.5
 	player_id = sim.add_fighter(Game.player_character(), 0, Vector2(0, half), FighterState.yaw_from_direction(Vector2(0, -1)))
+	if Game.live_mode:
+		# LIVE: địch do người xem gọi ra dần, trận không tự kết thúc khi một phe chết hết.
+		sim.auto_finish = false
 	# Địch đứng thành hàng ngang, mỗi hàng tối đa ENEMIES_PER_ROW người, hàng sau lùi xa hơn.
-	var n := md.enemy_characters.size()
+	var n := 0 if Game.live_mode else md.enemy_characters.size()
 	for i in n:
 		var row := i / ENEMIES_PER_ROW
 		var in_row := mini(n - row * ENEMIES_PER_ROW, ENEMIES_PER_ROW)
@@ -40,13 +50,7 @@ func _ready() -> void:
 	ArenaBuilder.build(self, cfg, quality, ConfigDB.arena)
 
 	for f in sim.state.fighters:
-		var v := FighterView.new()
-		add_child(v)
-		v.setup(f, ConfigDB.poses, f.id == player_id, Game.player_model() if f.id == player_id else null)
-		views[f.id] = v
-		_prev_pos[f.id] = f.pos
-		_prev_yaw[f.id] = f.yaw
-		v.sync(f, f.pos, f.yaw, 1.0, 0.0)
+		_add_view(f)
 
 	camera_rig = CameraRig.new()
 	add_child(camera_rig)
@@ -76,11 +80,10 @@ func _ready() -> void:
 	sources.append(player_src)
 	apply_controls()
 
-	var tokens := AttackTokenManager.new(cfg.max_attackers_at_once)
-	var seed_base := cfg.rng_seed if cfg.rng_seed != 0 else int(Time.get_unix_time_from_system())
+	_seed_base = cfg.rng_seed if cfg.rng_seed != 0 else int(Time.get_unix_time_from_system())
 	for f in sim.state.fighters:
 		if f.id != player_id:
-			sources.append(BotBrain.new(f.id, Game.current_bot(), sim.ctx, tokens, seed_base + f.id))
+			_add_bot(f, Game.current_bot())
 
 	var ui := CanvasLayer.new()
 	add_child(ui)
@@ -92,7 +95,62 @@ func _ready() -> void:
 	hud.setup(self, qm)
 
 	EventBus.sim_event.connect(_on_event)
+	if Game.live_mode:
+		live = LiveDirector.new()
+		add_child(live)
+		live.setup(self)
+		var live_hud := LiveHud.new()
+		ui.add_child(live_hud)
+		live_hud.setup(self)
 	EventBus.match_started.emit(self)
+
+
+func _add_view(f: FighterState) -> void:
+	var v := FighterView.new()
+	add_child(v)
+	v.setup(f, ConfigDB.poses, f.id == player_id, Game.player_model() if f.id == player_id else null)
+	views[f.id] = v
+	_prev_pos[f.id] = f.pos
+	_prev_yaw[f.id] = f.yaw
+	v.sync(f, f.pos, f.yaw, 1.0, 0.0)
+
+
+func _add_bot(f: FighterState, profile: BotProfile) -> void:
+	if not _tokens.has(f.team):
+		_tokens[f.team] = AttackTokenManager.new(ConfigDB.game.max_attackers_at_once)
+	sources.append(BotBrain.new(f.id, profile, sim.ctx, _tokens[f.team], _seed_base + f.id))
+
+
+## Thêm một tướng do bot điều khiển giữa trận (chế độ LIVE). Trả về id.
+func spawn_fighter(def: CharacterDef, team: int, pos: Vector2, yaw: float, profile: BotProfile, label: String = "") -> int:
+	var id := sim.add_fighter(def, team, pos, yaw)
+	var f := sim.state.get_fighter(id)
+	_add_view(f)
+	_add_bot(f, profile)
+	if label != "":
+		labels[id] = label
+	camera_rig.obstacles = views.values()
+	return id
+
+
+## Bỏ hẳn một tướng (dọn xác ở chế độ LIVE). Không bỏ người chơi.
+func remove_fighter(id: int) -> void:
+	if id == player_id:
+		return
+	for i in range(sources.size() - 1, -1, -1):
+		if sources[i].fighter_id == id:
+			sources.remove_at(i)
+	var f := sim.state.get_fighter(id)
+	if f and _tokens.has(f.team):
+		(_tokens[f.team] as AttackTokenManager).release(id)
+	sim.remove_fighter(id)
+	if views.has(id):
+		(views[id] as Node).queue_free()
+		views.erase(id)
+	_prev_pos.erase(id)
+	_prev_yaw.erase(id)
+	labels.erase(id)
+	camera_rig.obstacles = views.values()
 
 
 func _exit_tree() -> void:
