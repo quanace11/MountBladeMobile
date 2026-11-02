@@ -1,0 +1,19 @@
+{
+  "name": "dau-tuong-tiktok-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cầu nối TikTok LIVE -> game Đấu Tướng: đọc bình luận, quà, tim rồi gửi cho game qua WebSocket.",
+  "type": "module",
+  "main": "bridge.mjs",
+  "scripts": {
+    "start": "node bridge.mjs",
+    "fake": "node bridge.mjs --fake"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "2.5.0",
+    "ws": "8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

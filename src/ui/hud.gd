@@ -156,6 +156,8 @@ const END_PANEL_DELAY := 2.5
 
 
 func _on_match_over(winner_team: int) -> void:
+	if Game.live_mode:
+		return  # LIVE tự sang ván mới, bảng điểm do LiveHud vẽ.
 	var won := winner_team == 0
 	# Mở tầng tiếp ngay khi thắng, kể cả khi người chơi bấm Menu trước khi bảng kết thúc hiện.
 	if won:
@@ -217,7 +219,13 @@ func _draw() -> void:
 		if cam.is_position_behind(head):
 			continue
 		var sp := cam.unproject_position(head)
-		_draw_bar(sp - Vector2(50, 0), Vector2(100, 9), f.hp / f.def.max_hp, Color(0.85, 0.2, 0.15))
+		var ally := f.team == p.team
+		_draw_bar(sp - Vector2(50, 0), Vector2(100, 9), f.hp / f.def.max_hp, Color(0.25, 0.55, 0.95) if ally else Color(0.85, 0.2, 0.15))
+		var label: String = runner.labels.get(f.id, "")
+		if label != "":
+			var lc := Live.BLUE_TEXT if ally else Live.RED_TEXT
+			draw_string_outline(_font, sp - Vector2(110, 8), label, HORIZONTAL_ALIGNMENT_CENTER, 220.0, 17, 4, Color(0, 0, 0, 0.8))
+			draw_string(_font, sp - Vector2(110, 8), label, HORIZONTAL_ALIGNMENT_CENTER, 220.0, 17, lc)
 		if stamina:
 			_draw_bar(sp - Vector2(50, -11), Vector2(100, 5), f.stamina / f.def.max_stamina, Color(0.95, 0.75, 0.2))
 		if ConfigDB.input.show_attack_hint and f.state == S.WINDUP:

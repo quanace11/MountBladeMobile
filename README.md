@@ -8,6 +8,9 @@ Bản này là **bản thử cảm giác đánh đỡ**: nhân vật dựng bằ
 - Chơi với bot: 1 vs 1 đến 1 vs 4, bot dễ hoặc khó.
 - **Vượt tháp** (PvE): tầng 1 đấu 1 vs 1, thắng thì lên tầng 2 đấu 1 vs 2, cứ thế tới tầng 10 đấu 1 vs 10.
   Mỗi tầng hồi đầy máu. Chỉ chọn được tầng đã mở, tiến độ lưu trong máy. Địch lần lượt là đao, kiếm, thương tướng.
+- **TikTok LIVE**: bạn LIVE, người xem bình luận `1`/`2` để vào phe Xanh (phe bạn) hoặc Đỏ, tặng quà để gọi lính
+  (quà càng nhiều xu càng được ra trước, quà to ra ngay), thả tim để hồi máu cho bạn. Bạn chết thì Đỏ thắng ván,
+  hạ Tướng Đỏ thì Xanh thắng, rồi tự sang ván mới. Cần chạy cầu nối trên máy tính: xem `tools/tiktok_bridge/README.md`.
 
 ## Chạy thử
 

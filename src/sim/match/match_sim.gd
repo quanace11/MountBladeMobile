@@ -6,6 +6,8 @@ extends RefCounted
 var ctx: SimContext
 var state: MatchState = MatchState.new()
 var _next_id: int = 1
+## Tự kết thúc trận khi chỉ còn một phe sống. Chế độ LIVE tắt đi và tự quyết khi nào hết ván.
+var auto_finish: bool = true
 
 
 func _init(p_config: GameConfig, p_rules: CombatRules) -> void:
@@ -24,6 +26,13 @@ func add_fighter(def: CharacterDef, team: int, pos: Vector2, yaw: float) -> int:
 	f.stamina = def.max_stamina
 	state.fighters.append(f)
 	return f.id
+
+
+## Bỏ hẳn một tướng khỏi trận (dọn xác ở chế độ LIVE).
+func remove_fighter(id: int) -> void:
+	var f := state.get_fighter(id)
+	if f:
+		state.fighters.erase(f)
 
 
 ## Chạy một tick. commands: id -> FighterCommand. Tướng không có lệnh coi như đứng yên.
@@ -62,7 +71,7 @@ func step(commands: Dictionary) -> Array:
 			CombatResolver.stun(f, ctx)
 
 	var teams := state.alive_teams()
-	if teams.size() <= 1:
+	if auto_finish and teams.size() <= 1:
 		state.finished = true
 		state.winner_team = teams[0] if teams.size() == 1 else -1
 		events.append({"type": &"match_over", "winner": state.winner_team})

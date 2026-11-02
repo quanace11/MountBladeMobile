@@ -145,3 +145,4 @@ jobs:
       - run: godot --headless --path . --import
       - run: godot --headless --path . -s tests/run_tests.gd
       - run: godot --headless --path . -s tests/smoke_match.gd
+      - run: godot --headless --path . -s tests/smoke_live.gd

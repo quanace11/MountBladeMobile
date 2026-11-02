@@ -61,6 +61,7 @@ func _ready() -> void:
 	box.add_child(start)
 
 	_build_tower(box)
+	_build_live(box)
 
 	var help := Label.new()
 	help.text = "Tay trái: joystick di chuyển. Tay phải: giữ nút CHÉM và kéo về hướng muốn chém (lên = bổ, xuống = đâm, trái/phải = chém ngang), nhả để chém. Giữ nút ĐỠ và kéo về phía đòn đến. Tự xoay: kéo ngang chỗ trống bên phải để xoay người, chấm giữa màn hình là chỗ đang nhìn (đỏ = địch trong tầm chém).\nKhoá địch gần: tự quay về địch gần nhất, camera bám sau lưng.\nPC: WASD đi, Q/E xoay người, giữ I/J/K/L để gồng rồi nhả để chém, giữ phím mũi tên để đỡ."
@@ -94,6 +95,42 @@ func _build_tower(parent: Control) -> void:
 		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(func(): Game.start_tower(n))
 		grid.add_child(b)
+
+
+## Chế độ TikTok LIVE: nối tới cầu nối tools/tiktok_bridge chạy trên máy tính.
+func _build_live(parent: Control) -> void:
+	var head := Label.new()
+	head.text = "TIKTOK LIVE"
+	head.add_theme_font_size_override("font_size", 28)
+	head.add_theme_color_override("font_color", Color(0.95, 0.75, 0.3))
+	parent.add_child(head)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	parent.add_child(row)
+	var l := Label.new()
+	l.text = "Cầu nối"
+	l.custom_minimum_size = Vector2(170, 0)
+	l.add_theme_font_size_override("font_size", 24)
+	row.add_child(l)
+	var url := LineEdit.new()
+	url.text = Game.live_bridge_url if Game.live_bridge_url != "" else ConfigDB.live.bridge_url
+	url.custom_minimum_size = Vector2(420, 56)
+	url.add_theme_font_size_override("font_size", 22)
+	url.text_changed.connect(func(t: String): Game.live_bridge_url = t.strip_edges())
+	row.add_child(url)
+	var start := Button.new()
+	start.text = "VÀO LIVE"
+	start.custom_minimum_size = Vector2(220, 56)
+	start.add_theme_font_size_override("font_size", 24)
+	start.focus_mode = Control.FOCUS_NONE
+	start.pressed.connect(Game.start_live)
+	row.add_child(start)
+	var help := Label.new()
+	help.text = "Người xem bình luận 1 vào phe Xanh (phe bạn), 2 vào phe Đỏ. Quà ít xu xếp hàng chờ, quà từ %d xu ra trận ngay, từ %d xu ra Tướng. Tim hồi máu cho bạn. Bạn chết thì Đỏ thắng ván, hạ tướng Đỏ thì Xanh thắng. Chạy cầu nối trên máy tính trước (xem tools/tiktok_bridge/README.md). Thử không cần TikTok: phím 1-6 trong trận." % [ConfigDB.live.instant_coins, ConfigDB.live.tier_min_coins[ConfigDB.live.tier_min_coins.size() - 1]]
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.add_theme_font_size_override("font_size", 18)
+	help.add_theme_color_override("font_color", Color(0.85, 0.8, 0.7))
+	parent.add_child(help)
 
 
 ## Các tuỳ chỉnh cho chế độ "Tự chỉnh". Chỉ hiện khi chọn chế độ đó.
